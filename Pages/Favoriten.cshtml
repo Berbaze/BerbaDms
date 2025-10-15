@@ -1,0 +1,169 @@
+﻿@page
+@model FavoritenModel
+@{
+    ViewData["Title"] = "Favoriten";
+}
+
+
+        <div class="content-wrapper">
+            <h2 class="page-title">⭐ Favoriten</h2>
+
+            <!-- Tabs -->
+            <ul class="nav nav-tabs custom-tabs" id="favTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs" type="button" role="tab">
+                        Dokumente
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                        Notizen
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content mt-3">
+                <!-- Dokumente -->
+                <div class="tab-pane fade show active" id="docs" role="tabpanel">
+                    <h4 class="section-title">Favorisierte Dokumente</h4>
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Dokument</th>
+                                <th>Hinzugefügt am</th>
+                                <th>Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in Model.FavoriteDocs)
+                            {
+                                <tr>
+                                    <td>@doc.Titel</td>
+                                    <td>@doc.HinzugefuegtAm.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <a href="/Pdf/EditOne/@doc.Id" class="btn btn-sm btn-cyan">Anzeigen</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if (!Model.FavoriteDocs.Any())
+                    {
+                        <div class="empty-hint">Keine favorisierten Dokumente gefunden.</div>
+                    }
+                </div>
+
+                <!-- Notizen -->
+                <div class="tab-pane fade" id="notes" role="tabpanel">
+                    <h4 class="section-title">Favorisierte Notizen</h4>
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Notiz</th>
+                                <th>Hinzugefügt am</th>
+                                <th>Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var note in Model.FavoriteNotes)
+                            {
+                                <tr>
+                                    <td>@note.Titel</td>
+                                    <td>@note.HinzugefuegtAm.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <a href="/Notiz/Index/@note.Id" class="btn btn-sm btn-cyan">Anzeigen</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if (!Model.FavoriteNotes.Any())
+                    {
+                        <div class="empty-hint">Keine favorisierten Notizen gefunden.</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+
+
+<style>
+    .content-wrapper {
+        padding: 20px;
+    }
+
+    .page-title {
+        color: #4fd8ff; /* Blau wie "Geteilte Dokumente" */
+        margin-bottom: 20px;
+    }
+
+    .custom-tabs .nav-link {
+        background: #1b2029;
+        color: #d1d5db;
+        border: none;
+        padding: 8px 16px;
+    }
+
+        .custom-tabs .nav-link.active {
+            background: #263241;
+            color: #4fd8ff; /* Blau */
+        }
+
+    .section-title {
+        color: #4fd8ff;
+        margin-bottom: 10px;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #1b2029;
+        color: #d1d5db;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+        .custom-table thead {
+            background: #263241;
+            color: #4fd8ff;
+        }
+
+        .custom-table th, .custom-table td {
+            padding: 10px 12px;
+        }
+
+        .custom-table tbody tr:hover {
+            background: #212b36;
+        }
+
+    .btn-cyan {
+        background: #4fd8ff;
+        color: #191c24;
+        border: none;
+    }
+
+        .btn-cyan:hover {
+            background: #3ac7e8;
+            color: #fff;
+        }
+
+    .empty-hint {
+        color: #9ca3af;
+        font-style: italic;
+        margin-top: 5px;
+    }
+
+    /* Nur auf dieser Seite den Abstand reduzieren */
+
+
+    /* Nur für Favoriten-Seite: Abstand kleiner */
+    .page-favoriten .content-area {
+        margin-left: 40px !important; /* nur eine Ebene Abstand */
+    }
+
+        .page-favoriten .content-area .content-area {
+            margin-left: 0 !important; /* innere .content-area NICHT nochmal verschieben */
+        }
+</style>

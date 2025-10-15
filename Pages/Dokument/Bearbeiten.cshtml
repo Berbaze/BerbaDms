@@ -1,0 +1,1735 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.BearbeitenModel
+@{
+    ViewData["Title"] = "PDF Bearbeiten";
+}
+
+@if (!string.IsNullOrEmpty(Model.SasUrl))
+{
+    <div id="editorLayout">
+        <!-- Linke Toolbar -->
+        <div id="leftTools" class="toolbar">
+            <button id="highlight">🔦 Markieren</button>
+            <button id="addText">📝 Text einfügen</button>
+            <button id="sign">✍️ Signatur</button>
+            <button id="stamp">📌 Stempel</button>
+            <button id="undoHighlight">↩️ Rückgängig</button>
+            <button id="redoHighlight">↪️ Wiederholen</button>
+        </div>
+
+        <!-- PDF Viewer -->
+        <div id="viewerContainer">
+            <canvas id="pdfRenderer"></canvas>
+        </div>
+
+
+        <!-- Rechte Toolbar -->
+        <div id="rightTools" class="toolbar">
+            <button id="download">⬇️ Speichern</button>
+            <button id="rotate">🔄 Drehen</button>
+            <div id="pageControls">
+            <button id="zoomIn">➕ Zoom</button>
+            <button id="zoomOut">➖ Zoom</button>
+            </div>
+            <div id="pageControls">
+                <button id="prevPage">⬅️</button>
+                <span id="pageInfo">1 / ?</span>
+                <button id="nextPage">➡️</button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <p class="text-danger">❌ Dokument konnte nicht geladen werden.</p>
+}
+<div id="signatureModal" class="modal">
+    <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+
+        <h3>Unterschrift erstellen</h3>
+        <canvas id="signaturePad" width="400" height="200" style="border:1px solid #ccc;"></canvas>
+
+        <!-- Gespeicherte Signaturen -->
+        <div id="savedSignatureContainer" style="margin-top:15px; display:none;">
+            <h4>Gespeicherte Signaturen:</h4>
+            <div id="savedSignatureList"></div>
+        </div>
+
+        <div style="margin-top:15px;">
+            <button id="clearSignature">🧹 Löschen</button>
+            <button id="saveSignature">✔️ Übernehmen</button>
+            <button id="saveSignaturePermanent">💾 Speichern</button>
+        </div>
+    </div>
+</div>
+<div id="saveModal" class="modal">
+    <div class="modal-content">
+        <span id="closeSaveModal" class="close">&times;</span>
+        <h3>Dokument speichern</h3>
+        <p>Dateiname:</p>
+        <input type="text" id="saveFileName" style="width:100%; padding:5px; margin-top:10px;" />
+        <div style="margin-top:15px;">
+            <button id="confirmSave">💾 Speichern</button>
+            <button id="cancelSave">❌ Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="metaModal" class="modal">
+    <div class="modal-content">
+        <span id="closeMetaModal" class="close">&times;</span>
+        <h3>Metadaten bearbeiten?</h3>
+        <p>Möchten Sie vor dem Speichern die Metadaten des Dokuments bearbeiten?</p>
+        <div style="margin-top:15px;">
+            <button id="editMeta">📝 Ja, Metadaten bearbeiten</button>
+            <button id="skipMeta">➡️ Nein, direkt speichern</button>
+        </div>
+    </div>
+</div>
+
+<div id="metadataModal" class="modal">
+    <div class="modal-content metadata-form">
+        <span id="closeMetadataModal" class="close">&times;</span>
+        <h3>Metadaten bearbeiten</h3>
+
+        <form id="metadataForm">
+            <div class="form-group">
+                <label for="metaBeschreibung">Beschreibung:</label>
+                <input type="text" id="metaBeschreibung" name="Beschreibung" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="metaRechnungsnummer">Rechnungsnummer:</label>
+                    <input type="text" id="metaRechnungsnummer" name="Rechnungsnummer" />
+                </div>
+                <div class="form-group">
+                    <label for="metaKundennummer">Kundennummer:</label>
+                    <input type="text" id="metaKundennummer" name="Kundennummer" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="metaRechnungsbetrag">Rechnungsbetrag:</label>
+                    <input type="number" id="metaRechnungsbetrag" name="Rechnungsbetrag" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label for="metaNettobetrag">Nettobetrag:</label>
+                    <input type="number" id="metaNettobetrag" name="Nettobetrag" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label for="metaGesamtpreis">Gesamtpreis:</label>
+                    <input type="number" id="metaGesamtpreis" name="Gesamtpreis" step="0.01" />
+                </div>
+                <div class="form-group">
+                    <label for="metaSteuerbetrag">Steuerbetrag:</label>
+                    <input type="number" id="metaSteuerbetrag" name="Steuerbetrag" step="0.01" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="metaRechnungsdatum">Rechnungsdatum:</label>
+                    <input type="date" id="metaRechnungsdatum" name="Rechnungsdatum" />
+                </div>
+                <div class="form-group">
+                    <label for="metaLieferdatum">Lieferdatum:</label>
+                    <input type="date" id="metaLieferdatum" name="Lieferdatum" />
+                </div>
+                <div class="form-group">
+                    <label for="metaFaelligkeitsdatum">Fälligkeitsdatum:</label>
+                    <input type="date" id="metaFaelligkeitsdatum" name="Faelligkeitsdatum" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="metaZahlungsbedingungen">Zahlungsbedingungen:</label>
+                <input type="text" id="metaZahlungsbedingungen" name="Zahlungsbedingungen" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="metaEmail">E-Mail:</label>
+                    <input type="email" id="metaEmail" name="Email" />
+                </div>
+                <div class="form-group">
+                    <label for="metaTelefon">Telefon:</label>
+                    <input type="text" id="metaTelefon" name="Telefon" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="metaAdresse">Adresse:</label>
+                <input type="text" id="metaAdresse" name="Adresse" />
+            </div>
+
+            <div class="form-group">
+                <label for="metaAnsprechPartner">Ansprechpartner:</label>
+                <input type="text" id="metaAnsprechPartner" name="AnsprechPartner" />
+            </div>
+        </form>
+
+        <div class="modal-actions">
+            <button id="openSaveNameFromMeta" class="btn btn-primary">✔️ Speichern & Version anlegen</button>
+            <button id="cancelMetadata" class="btn btn-danger">❌ Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="stampEditModal" class="modal">
+    <div class="modal-content">
+        <span id="closeStampModal" class="close">&times;</span>
+        <h3>Stempel bearbeiten</h3>
+
+        <label>Text:</label>
+        <input type="text" id="stampTextInput" style="width:100%; margin:10px 0; padding:5px;" />
+
+        <label>Farbe:</label>
+        <input type="color" id="stampColorInput" value="#003366" style="margin:10px 0;" />
+
+        <div style="margin:10px 0;">
+            <label>
+                <input type="checkbox" id="stampBorderInput" checked />
+                Mit Rand anzeigen
+            </label>
+        </div>
+
+        <div style="margin-top:15px;">
+            <button id="applyStampChanges">✔️ Übernehmen</button>
+            <button id="cancelStampChanges">❌ Abbrechen</button>
+        </div>
+    </div>
+</div>
+<!-- ================= SIS LOG PANEL ================= -->
+<div id="sisLogPanel">
+    <div id="sisLogHeader">🧠 SIS Echtzeit-Log</div>
+    <div id="sisLogContainer"></div>
+</div>
+
+
+<!-- ================== PDF.js einbinden ================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    // Worker einmalig korrekt setzen
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<script src="~/js/sis-client.js"></script>
+
+
+<!-- ================== Dein eigenes Script ================== -->
+<script>
+    let signatureImage = null;
+    let currentScale = 1;
+    let pdfDoc = null, pageNum = 1;
+    let signaturesByPage = {};
+        let highlightMode = false;
+    let highlightsByPage = {}; // Speichert alle Markierungen pro Seite
+    let redoStackByPage = {};
+    // =================== PDF RENDERING ===================
+    function initPdfViewer(url) {
+        const loadingTask = pdfjsLib.getDocument(url);
+
+        loadingTask.promise.then(pdf => {
+            pdfDoc = pdf;
+            renderPage(1);
+            document.getElementById("pageInfo").textContent = `1 / ${pdfDoc.numPages}`;
+        }).catch(err => {
+            console.error("❌ PDF Ladefehler:", err);
+            alert("Fehler beim Laden der PDF: " + err.message);
+        });
+
+        document.getElementById("prevPage").addEventListener("click", () => changePage(-1));
+        document.getElementById("nextPage").addEventListener("click", () => changePage(1));
+    }
+            document.getElementById("highlight").addEventListener("click", () => {
+        highlightMode = !highlightMode;
+        if (highlightMode) {
+            document.getElementById("highlight").style.background = "#ffeb3b";
+            document.querySelectorAll(".pdf-page canvas:nth-child(2)").forEach(c => {
+                c.style.pointerEvents = "auto";   // Marker aktiv
+            });
+        } else {
+            document.getElementById("highlight").style.background = "";
+            document.querySelectorAll(".pdf-page canvas:nth-child(2)").forEach(c => {
+                c.style.pointerEvents = "none";   // Marker wieder blockieren
+            });
+        }
+    });
+
+
+
+           let viewports = {}; // global
+    let currentRotation = 0; // Drehung in Grad
+
+                  function renderPage(num, customScale = null) {
+        pdfDoc.getPage(num).then(page => {
+            const container = document.getElementById("viewerContainer");
+            container.innerHTML = "";
+
+            const unscaledViewport = page.getViewport({ scale: 1, rotation: currentRotation });
+
+            // Falls Zoom gesetzt wurde → verwenden, sonst automatisch anpassen
+            let scale = customScale || Math.min(
+                container.clientWidth / unscaledViewport.width,
+                container.clientHeight / unscaledViewport.height
+            );
+            currentScale = scale;
+
+            const viewport = page.getViewport({ scale, rotation: currentRotation });
+            viewports[num] = viewport;
+
+            const pageWrapper = document.createElement("div");
+            pageWrapper.classList.add("pdf-page");
+            pageWrapper.style.position = "relative";
+            pageWrapper.style.width = viewport.width + "px";
+            pageWrapper.style.height = viewport.height + "px";
+
+            // ================= PDF Canvas =================
+            const canvas = document.createElement("canvas");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            pageWrapper.appendChild(canvas);
+            container.appendChild(pageWrapper);
+
+            const ctx = canvas.getContext("2d");
+            page.render({ canvasContext: ctx, viewport });
+
+            // ================= Highlight Canvas =================
+             
+    const highlightCanvas = document.createElement("canvas");
+    highlightCanvas.width = viewport.width;
+    highlightCanvas.height = viewport.height;
+    highlightCanvas.style.position = "absolute";
+    highlightCanvas.style.top = "0";
+    highlightCanvas.style.left = "0";
+    highlightCanvas.style.zIndex = "500";
+    pageWrapper.appendChild(highlightCanvas);
+
+    const highlightCtx = highlightCanvas.getContext("2d");
+
+    // 🧠 Speicherstruktur pro Seite
+    if (!highlightsByPage[num]) highlightsByPage[num] = [];
+    if (!redoStackByPage[num]) redoStackByPage[num] = [];
+
+    let drawing = false;
+    let currentPath = [];
+
+    highlightCanvas.addEventListener("mousedown", (e) => {
+        if (!highlightMode) return;
+        drawing = true;
+        const rect = highlightCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        currentPath = [{ x, y }];
+    });
+
+    highlightCanvas.addEventListener("mousemove", (e) => {
+        if (!highlightMode || !drawing) return;
+        const rect = highlightCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        currentPath.push({ x, y });
+
+        // 🔥 Aktuellen Strich live anzeigen
+        redrawHighlights(highlightCtx, highlightsByPage[num], currentPath);
+    });
+
+    highlightCanvas.addEventListener("mouseup", stopDrawing);
+    highlightCanvas.addEventListener("mouseleave", stopDrawing);
+
+    function stopDrawing() {
+        if (!drawing) return;
+        drawing = false;
+
+        if (currentPath.length > 1) {
+            highlightsByPage[num].push(currentPath);
+            redoStackByPage[num] = []; // Redo leeren bei neuem Strich
+
+            // 🔄 Broadcast avant le reset !
+            broadcastChange("@Model.Id", {
+                type: "highlight",
+                page: num,
+                path: currentPath,
+                color: "rgba(255,255,0,0.33)",
+                user: "@User.Identity.Name"
+            });
+        }
+
+        currentPath = [];
+        redrawHighlights(highlightCtx, highlightsByPage[num]);
+    }
+
+
+    // Beim Rendern alte Highlights wiederherstellen
+    if (highlightsByPage[num].length > 0) {
+        redrawHighlights(highlightCtx, highlightsByPage[num]);
+    }
+
+
+
+
+          // === Globale Speicherobjekte ===
+    
+
+    // === Rückgängig ===
+    document.getElementById("undoHighlight").addEventListener("click", () => {
+        const paths = highlightsByPage[pageNum];
+        if (!paths || paths.length === 0) {
+            alert("Keine Markierungen zum Rückgängig machen.");
+            return;
+        }
+
+        const undone = paths.pop();
+        if (!redoStackByPage[pageNum]) redoStackByPage[pageNum] = [];
+        redoStackByPage[pageNum].push(undone);
+
+        const canvas = document.querySelector(".pdf-page canvas:nth-child(2)");
+        const ctx = canvas.getContext("2d");
+        redrawHighlights(ctx, paths);
+    });
+
+    // === Wiederholen ===
+    document.getElementById("redoHighlight").addEventListener("click", () => {
+        const redoStack = redoStackByPage[pageNum];
+        if (!redoStack || redoStack.length === 0) {
+            alert("Nichts zum Wiederholen.");
+            return;
+        }
+
+        const restored = redoStack.pop();
+        highlightsByPage[pageNum].push(restored);
+
+        const canvas = document.querySelector(".pdf-page canvas:nth-child(2)");
+        const ctx = canvas.getContext("2d");
+        redrawHighlights(ctx, highlightsByPage[pageNum]);
+    });
+
+    // === Helper: Alles neu zeichnen ===
+    function redrawHighlights(ctx, paths, tempPath = null) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.lineWidth = 25;
+        ctx.strokeStyle = "rgba(255,255,0,0.33)";
+
+        for (const path of paths) {
+            ctx.beginPath();
+            for (let i = 0; i < path.length; i++) {
+                const { x, y } = path[i];
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        // optionaler Live-Pfad beim Ziehen
+        if (tempPath) {
+            ctx.beginPath();
+            for (let i = 0; i < tempPath.length; i++) {
+                const { x, y } = tempPath[i];
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+    }
+
+
+
+            // ================= Signaturen / Stempel =================
+            if (signaturesByPage[num]) {
+                signaturesByPage[num].forEach(sig => {
+                    const box = document.createElement("div");
+                    box.classList.add("signature-box");
+
+                    const vp = viewports[num];
+                    box.style.left = (sig.x * currentScale) + "px";
+                    box.style.top = ((vp.height - (sig.y + sig.h)) * currentScale) + "px";
+                    box.style.width = (sig.w * currentScale) + "px";
+                    box.style.height = (sig.h * currentScale) + "px";
+
+                    box.innerHTML = `<img src="${sig.img}"
+                        style="display:block; width:100%; height:100%; object-fit:contain;"/>`;
+
+                    pageWrapper.appendChild(box);
+
+                    if (!sig.isSaved) {
+                        makeDraggableResizable(box);
+                    }
+
+                    sig.element = box;
+                });
+            }
+
+            // ================= Seiteninfo =================
+            document.getElementById("pageInfo").textContent = `${num} / ${pdfDoc.numPages}`;
+        });
+    }
+
+
+
+
+
+    function changePage(offset) {
+        if (pageNum + offset >= 1 && pageNum + offset <= pdfDoc.numPages) {
+            pageNum += offset;
+            renderPage(pageNum, currentScale);
+        }
+    }
+
+    // =================== SIGNATURE PAD ===================
+    document.getElementById("sign").addEventListener("click", () => {
+        document.getElementById("signatureModal").style.display = "flex";
+        initSignaturePad();
+    });
+
+    function initSignaturePad() {
+        const canvas = document.getElementById("signaturePad");
+        const ctx = canvas.getContext("2d");
+
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 2;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        let drawing = false;
+
+        function startDrawing(x, y) {
+            drawing = true;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function draw(x, y) {
+            if (!drawing) return;
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() { drawing = false; }
+
+        // Maus
+        canvas.onmousedown = e => startDrawing(e.offsetX, e.offsetY);
+        canvas.onmousemove = e => draw(e.offsetX, e.offsetY);
+        canvas.onmouseup = stopDrawing;
+        canvas.onmouseleave = stopDrawing;
+
+        // Touch
+        canvas.addEventListener("touchstart", e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const t = e.touches[0];
+            startDrawing(t.clientX - rect.left, t.clientY - rect.top);
+        });
+        canvas.addEventListener("touchmove", e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const t = e.touches[0];
+            draw(t.clientX - rect.left, t.clientY - rect.top);
+        });
+        canvas.addEventListener("touchend", stopDrawing);
+
+        // Buttons
+        document.getElementById("clearSignature").onclick = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        };
+
+        document.getElementById("saveSignature").onclick = () => {
+            signatureImage = canvas.toDataURL("image/png");
+            document.getElementById("signatureModal").style.display = "none";
+            if (signatureImage) addSignatureBox(signatureImage);
+        };
+    }
+
+    // =================== SIGNATURE BOX ===================
+                  async function addSignatureBox(imgSrc, type = "signature") {
+        const container = document.querySelector(".pdf-page");
+        if (!container) return;
+
+        let base64Img = imgSrc;
+        if (!imgSrc.startsWith("data:image")) {
+            base64Img = await toBase64(imgSrc);
+        }
+
+        const img = new Image();
+        img.src = base64Img;
+
+        img.onload = () => {
+            const box = document.createElement("div");
+            box.classList.add("signature-box");
+            box.dataset.type = type; // 👈 speichern ob Signatur oder Stempel
+
+            const naturalW = img.naturalWidth;
+            const naturalH = img.naturalHeight;
+            const vp = viewports[pageNum];
+            const scale = vp.width * 0.3 / naturalW;
+
+            const boxWidth = naturalW * scale;
+            const boxHeight = naturalH * scale;
+
+            box.style.left = "100px";
+            box.style.top = "100px";
+            box.style.width = boxWidth + "px";
+            box.style.height = boxHeight + "px";
+
+            // Bild
+            const imageEl = document.createElement("img");
+            imageEl.src = base64Img;
+            imageEl.style.width = "100%";
+            imageEl.style.height = "100%";
+            imageEl.style.display = "block";
+            imageEl.style.objectFit = "cover";
+            box.appendChild(imageEl);
+
+            // ✅ Controls hinzufügen
+            const controls = document.createElement("div");
+            controls.classList.add("signature-controls");
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "🗑️ Löschen";
+            deleteBtn.addEventListener("click", () => {
+                removeBox(box);
+            });
+            controls.appendChild(deleteBtn);
+
+                if (type === "stamp") {
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "✏️ Bearbeiten";
+        editBtn.addEventListener("click", () => {
+            openStampEditModal(box);
+        });
+        controls.appendChild(editBtn);
+    }
+
+
+            box.appendChild(controls);
+
+            container.appendChild(box);
+            makeDraggableResizable(box);
+
+            if (!signaturesByPage[pageNum]) signaturesByPage[pageNum] = [];
+            signaturesByPage[pageNum].push({
+                element: box,
+                img: base64Img,
+                type: type
+            });
+
+            setFocus(box); // direkt Fokus beim Erstellen
+
+                // 🔄 Broadcast an alle verbundenen Nutzer
+    broadcastChange("@Model.Id", {
+        type: "signature",
+        page: pageNum,
+        img: base64Img,
+        x: 100,
+        y: 100,
+        w: boxWidth,
+        h: boxHeight,
+        user: "@User.Identity.Name"
+    });
+
+        };
+    }
+
+        function removeBox(box) {
+        const page = pageNum;
+        if (signaturesByPage[page]) {
+            signaturesByPage[page] = signaturesByPage[page].filter(sig => sig.element !== box);
+        }
+        box.remove();
+    }
+
+    function updateBoxData(box, newImg) {
+        const page = pageNum;
+        if (signaturesByPage[page]) {
+            signaturesByPage[page].forEach(sig => {
+                if (sig.element === box) {
+                    sig.img = newImg;
+                }
+            });
+        }
+    }
+
+
+        let currentStampBox = null;
+
+    function openStampEditModal(box) {
+        currentStampBox = box;
+        const imgEl = box.querySelector("img");
+
+        // Default Werte setzen
+        document.getElementById("stampTextInput").value = "Firma - " + new Date().toLocaleDateString();
+        document.getElementById("stampColorInput").value = "#003366";
+
+        document.getElementById("stampEditModal").style.display = "flex";
+    }
+
+    document.getElementById("closeStampModal").onclick = () => {
+        document.getElementById("stampEditModal").style.display = "none";
+    };
+    document.getElementById("cancelStampChanges").onclick = () => {
+        document.getElementById("stampEditModal").style.display = "none";
+    };
+
+    // Anwenden
+        document.getElementById("applyStampChanges").onclick = async () => {
+        if (!currentStampBox) return;
+
+        const text = document.getElementById("stampTextInput").value;
+        const color = document.getElementById("stampColorInput").value;
+        const withBorder = document.getElementById("stampBorderInput").checked;
+
+        const newBase64 = await renderStampToImage(text, color, withBorder);
+
+        const imgEl = currentStampBox.querySelector("img");
+        imgEl.src = newBase64;
+        updateBoxData(currentStampBox, newBase64);
+
+        document.getElementById("stampEditModal").style.display = "none";
+    };
+
+
+
+
+        async function toBase64(url) {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+        function makeDraggableResizable(el) {
+        let shiftX, shiftY;
+        const imgEl = el.querySelector("img");
+
+        // 📌 Fokus bei Klick setzen
+        el.addEventListener("mousedown", (e) => {
+            if (!e.target.classList.contains("resize-handle")) {
+                setFocus(el);
+            }
+        });
+
+        // --- Drag Logik (wie gehabt) ---
+        el.addEventListener("mousedown", function (e) {
+            if (e.target.classList.contains("resize-handle")) return;
+
+            const container = document.getElementById("viewerContainer");
+            const containerRect = container.getBoundingClientRect();
+
+            shiftX = e.clientX - el.offsetLeft - containerRect.left;
+            shiftY = e.clientY - el.offsetTop - containerRect.top;
+
+            function moveAt(pageX, pageY) {
+                el.style.left = pageX - containerRect.left - shiftX + "px";
+                el.style.top = pageY - containerRect.top - shiftY + "px";
+            }
+
+            function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+
+            moveAt(e.pageX, e.pageY);
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", function onMouseUp() {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+            });
+        });
+
+        el.ondragstart = () => false;
+
+        // --- Resize Handle ---
+        const handle = document.createElement("div");
+        handle.classList.add("resize-handle");
+        Object.assign(handle.style, {
+            width: "10px", height: "10px",
+            background: "blue", position: "absolute",
+            right: "0", bottom: "0", cursor: "nwse-resize"
+        });
+        el.appendChild(handle);
+
+        handle.addEventListener("mousedown", function (e) {
+            e.stopPropagation();
+            setFocus(el); // Auch beim Resize Fokus setzen
+
+            let startX = e.clientX;
+            let startY = e.clientY;
+            let startW = el.offsetWidth;
+            let startH = el.offsetHeight;
+            const aspectRatio = imgEl.naturalWidth / imgEl.naturalHeight;
+
+            function doDrag(e) {
+                let newW = startW + (e.clientX - startX);
+                let newH = newW / aspectRatio;
+                if (newW < 20) newW = 20;
+                if (newH < 20) newH = 20;
+
+                el.style.width = newW + "px";
+                el.style.height = newH + "px";
+                imgEl.style.width = newW + "px";
+                imgEl.style.height = newH + "px";
+            }
+
+            function stopDrag() {
+                document.removeEventListener("mousemove", doDrag);
+                document.removeEventListener("mouseup", stopDrag);
+            }
+
+            document.addEventListener("mousemove", doDrag);
+            document.addEventListener("mouseup", stopDrag);
+        });
+    }
+
+    // 🔥 Fokus-Helper
+    function setFocus(el) {
+        document.querySelectorAll(".signature-box").forEach(box => {
+            box.classList.remove("focused");
+        });
+        el.classList.add("focused");
+    }
+
+    // 🔥 Klick außerhalb → alle Boxen unfokussiert
+    document.addEventListener("mousedown", (e) => {
+        if (!e.target.closest(".signature-box")) {
+            document.querySelectorAll(".signature-box").forEach(box => {
+                box.classList.remove("focused");
+            });
+        }
+    });
+
+        // 🧠 Verbindung mit SIS-Hub beim Laden
+    document.addEventListener("DOMContentLoaded", async () => {
+        const documentId = "@Model.Id";
+        const userName = "@User.Identity.Name";
+        await joinDocumentSession(documentId, userName);
+    });
+        connection.on("ReceiveChange", (jsonData) => {
+        console.log("📩 Update received from SIS:", jsonData);
+        // reste du code...
+    });
+
+
+    // =================== USER SIGNATURE ===================
+    async function loadUserSignature() {
+        const res = await fetch("/Dokument/Bearbeiten?handler=UserSignature");
+        const result = await res.json();
+
+        const container = document.getElementById("savedSignatureContainer");
+        const list = document.getElementById("savedSignatureList");
+        list.innerHTML = "";
+    if (result.success && result.base64) {
+        container.style.display = "block";
+
+        const thumb = document.createElement("div");
+        thumb.classList.add("saved-signature-thumb");
+        thumb.innerHTML = `<img src="${result.base64}" alt="Signatur"/>`;
+
+        thumb.addEventListener("click", () => {
+            addSignatureBox(result.base64);
+            document.getElementById("signatureModal").style.display = "none";
+        });
+
+        list.appendChild(thumb);
+    } else {
+        container.style.display = "none";
+    }
+
+
+    }
+        // === Helper: Signaturen einsammeln ===
+    function collectSignatures(fileId) {
+        const signatures = [];
+        for (let page in signaturesByPage) {
+            const canvas = document.querySelector(`#viewerContainer .pdf-page canvas`);
+            const canvasRect = canvas.getBoundingClientRect();
+
+            signaturesByPage[page].forEach(sig => {
+                const imgEl = sig.element.querySelector("img");
+                const rect = imgEl.getBoundingClientRect();
+
+                signatures.push({
+                    FileId: fileId,
+                    PageNumber: parseInt(page),
+                    ImageBase64: sig.img,
+                    RelX: (rect.left - canvasRect.left) / canvasRect.width,
+                    RelY: (rect.top - canvasRect.top) / canvasRect.height,
+                    RelW: rect.width / canvasRect.width,
+                    RelH: rect.height / canvasRect.height
+                });
+            });
+        }
+        return signatures;
+    }
+        function collectHighlights(fileId) {
+        const highlights = [];
+
+        for (let page in highlightsByPage) {
+            const paths = highlightsByPage[page];
+            if (!paths || paths.length === 0) continue;
+
+            // 🖼 Canvas als PNG exportieren
+            const highlightCanvas = document.querySelector(`.pdf-page:nth-child(${page}) canvas:nth-child(2)`);
+            if (highlightCanvas) {
+                const imgData = highlightCanvas.toDataURL("image/png");
+                highlights.push({
+                    FileId: fileId,
+                    PageNumber: parseInt(page),
+                    ImageBase64: imgData
+                });
+            }
+        }
+
+        return highlights;
+    }
+
+
+      // =================== SPEICHERN Ablauf ===================
+    document.getElementById("download").addEventListener("click", () => {
+        document.getElementById("metaModal").style.display = "flex"; // 1. Schritt
+    });
+
+
+       // "Ja, Metadaten bearbeiten"
+    document.getElementById("editMeta").addEventListener("click", async () => {
+        document.getElementById("metaModal").style.display = "none";
+
+        const fileId = "@Model.Id";
+
+        // 🔹 Signaturen im SessionStorage sichern
+        const signatures = [];
+        for (let page in signaturesByPage) {
+            const canvas = document.querySelector(`#viewerContainer .pdf-page canvas`);
+            const canvasRect = canvas.getBoundingClientRect();
+
+            signaturesByPage[page].forEach(sig => {
+                const imgEl = sig.element.querySelector("img");
+                const rect = imgEl.getBoundingClientRect();
+
+                const entry = {
+                    FileId: fileId,
+                    PageNumber: parseInt(page),
+                    ImageBase64: sig.img,
+                    RelX: (rect.left - canvasRect.left) / canvasRect.width,
+                    RelY: (rect.top - canvasRect.top) / canvasRect.height,
+                    RelW: rect.width / canvasRect.width,
+                    RelH: rect.height / canvasRect.height
+                };
+
+                signatures.push(entry);
+            });
+        }
+        sessionStorage.setItem("pendingSignatures", JSON.stringify(signatures));
+
+        // 🔹 Original-Metadaten vom Backend laden
+        try {
+            const res = await fetch(`/Dokument/Bearbeiten?handler=OriginalMetadata&id=${fileId}`);
+            const result = await res.json();
+
+            if (result.success && result.metadata) {
+                const meta = result.metadata;
+
+                document.getElementById("metaBeschreibung").value = meta.beschreibung || "";
+                document.getElementById("metaRechnungsnummer").value = meta.rechnungsnummer || "";
+                document.getElementById("metaKundennummer").value = meta.kundennummer || "";
+                document.getElementById("metaRechnungsbetrag").value = meta.rechnungsbetrag ?? "";
+                document.getElementById("metaNettobetrag").value = meta.nettobetrag ?? "";
+                document.getElementById("metaGesamtpreis").value = meta.gesamtpreis ?? "";
+                document.getElementById("metaSteuerbetrag").value = meta.steuerbetrag ?? "";
+
+                document.getElementById("metaRechnungsdatum").value = meta.rechnungsdatum?.split("T")[0] || "";
+                document.getElementById("metaLieferdatum").value = meta.lieferdatum?.split("T")[0] || "";
+                document.getElementById("metaFaelligkeitsdatum").value = meta.faelligkeitsdatum?.split("T")[0] || "";
+
+                document.getElementById("metaZahlungsbedingungen").value = meta.zahlungsbedingungen || "";
+                document.getElementById("metaEmail").value = meta.email || "";
+                document.getElementById("metaTelefon").value = meta.telefon || "";
+                document.getElementById("metaAdresse").value = meta.adresse || "";
+                document.getElementById("metaAnsprechPartner").value = meta.ansprechpartner || "";
+
+                // ✅ Modal öffnen
+                document.getElementById("metadataModal").style.display = "flex";
+            } else {
+                alert("❌ Fehler: " + result.message);
+            }
+        } catch (err) {
+            console.error("Fehler beim Laden der Metadaten:", err);
+            alert("❌ Metadaten konnten nicht geladen werden!");
+        }
+    });
+
+        
+        
+        document.getElementById("openSaveNameFromMeta").addEventListener("click", async () => {
+        const fileId = "@Model.Id";
+
+        const metadata = {};
+        const formData = new FormData(document.getElementById("metadataForm"));
+        formData.forEach((value, key) => {
+            const inputEl = document.querySelector(`[name="${key}"]`);
+
+            // Normalisieren: Backend will evtl. PascalCase
+            const normalizedKey = key; // oder key.charAt(0).toUpperCase() + key.slice(1);
+
+            // ✅ Typ beachten
+            if (inputEl?.type === "number") {
+                metadata[normalizedKey] = value ? parseFloat(value) : null;
+            } else if (inputEl?.type === "date") {
+                metadata[normalizedKey] = value ? value : null;
+            } else {
+                metadata[normalizedKey] = value || null;
+            }
+        });
+
+        const signatures = collectSignatures(fileId);
+
+            const highlights = collectHighlights(fileId);
+
+    const payload = {
+        FileId: fileId,
+        Metadata: metadata,
+        Signatures: signatures,
+        Highlights: highlights // 👈 NEU
+    };
+
+        sessionStorage.setItem("pendingSaveRequest", JSON.stringify(payload));
+
+        console.log("✅ Payload gespeichert aus Metadaten:", payload);
+
+        document.getElementById("metadataModal").style.display = "none";
+        document.getElementById("saveModal").style.display = "flex";
+
+        setSuggestedFileName(fileId);
+    });
+
+
+
+
+     // "Nein, direkt speichern"
+    document.getElementById("skipMeta").addEventListener("click", async () => {
+        const fileId = "@Model.Id";
+
+        // Signaturen sichern
+        const signatures = collectSignatures(fileId);
+        const highlights = collectHighlights(fileId);
+        try {
+            // ✅ Original-Metadaten vom Backend laden
+            const res = await fetch(`/Dokument/Bearbeiten?handler=OriginalMetadata&id=${fileId}`);
+            const result = await res.json();
+
+            let metadata = {};
+            if (result.success && result.metadata) {
+                metadata = result.metadata;
+            }
+
+            // ✅ Payload speichern
+            sessionStorage.setItem("pendingSaveRequest", JSON.stringify({
+                FileId: fileId,
+                Metadata: metadata,   // 👈 hier echte Original-Metadaten
+                Signatures: signatures,
+                Highlights: highlights
+            }));
+
+            console.log("✅ Payload gespeichert (direkt, ohne Bearbeitung):", metadata);
+
+            // Modal Handling
+            document.getElementById("metaModal").style.display = "none";
+            document.getElementById("saveModal").style.display = "flex";
+
+            // Vorschlag holen
+            setSuggestedFileName(fileId);
+
+        } catch (err) {
+            console.error("❌ Fehler beim Laden der Original-Metadaten:", err);
+            alert("❌ Metadaten konnten nicht geladen werden!");
+        }
+    });
+
+    // === Helper: Vorschlag holen ===
+    async function setSuggestedFileName(fileId) {
+        try {
+            const res = await fetch(`/Dokument/Bearbeiten?handler=FileName&id=${fileId}`);
+            const result = await res.json();
+            document.getElementById("saveFileName").value =
+                result.success ? result.suggestedName :
+                "Dokument_" + new Date().toISOString().split("T")[0] + ".pdf";
+        } catch (err) {
+            console.error("Fehler beim Laden des Dateinamens:", err);
+            document.getElementById("saveFileName").value =
+                "Dokument_" + new Date().toISOString().split("T")[0] + ".pdf";
+        }
+    }
+
+
+    // Speichern bestätigen
+             // Speichern bestätigen
+                document.getElementById("confirmSave").addEventListener("click", async () => {
+        const saveFileName = document.getElementById("saveFileName").value;
+
+        if (!saveFileName) {
+            alert("❌ Bitte Dateiname eingeben");
+            return;
+        }
+
+        // Payload aus sessionStorage holen
+        let payload = JSON.parse(sessionStorage.getItem("pendingSaveRequest") || "{}");
+
+        // ✅ Absicherung: Payload prüfen
+        if (!payload || !payload.FileId) {
+            alert("❌ Fehler: Keine Daten zum Speichern gefunden!");
+            return;
+        }
+
+        // ✅ Sicherstellen, dass Metadata nie null/undefined ist
+        if (!payload.Metadata || typeof payload.Metadata !== "object") {
+            payload.Metadata = {};
+        }
+
+        payload.FileName = saveFileName;
+
+        console.log("📦 Speichere mit Name & Metadaten:", payload);
+
+        try {
+            const res = await fetch("/Dokument/Bearbeiten?handler=SaveWithName", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert("✔️ Gespeichert: " + result.fileName);
+                document.getElementById("saveModal").style.display = "none";
+                sessionStorage.removeItem("pendingSaveRequest");
+            } else {
+                alert("❌ Fehler: " + result.message);
+            }
+        } catch (err) {
+            console.error("❌ Fehler beim Speichern:", err);
+            alert("❌ Unerwarteter Fehler beim Speichern!");
+        }
+    });
+
+
+
+
+
+
+    // Cancel
+    document.getElementById("cancelSave").addEventListener("click", () => {
+        document.getElementById("saveModal").style.display = "none";
+    });
+
+    // Alle Modals schließen mit X
+    document.querySelectorAll(".close").forEach(btn => {
+        btn.addEventListener("click", () => {
+            btn.closest(".modal").style.display = "none";
+        });
+    });
+
+    // =================== START ===================
+    document.addEventListener("DOMContentLoaded", () => {
+        const pdfUrl = `/Dokument/Bearbeiten?handler=PdfProxy&id=@Model.Id`;
+        if (pdfUrl) {
+            initPdfViewer(pdfUrl);
+        }
+        loadUserSignature();
+    });
+
+        document.getElementById("saveSignaturePermanent").onclick = async () => {
+        const canvas = document.getElementById("signaturePad");
+        const base64 = canvas.toDataURL("image/png");
+
+        try {
+            const res = await fetch("/Dokument/Bearbeiten?handler=SaveUserSignature", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ImageBase64: base64 })
+            });
+
+            const result = await res.json();
+            if (result.success) {
+                alert("✔️ Signatur gespeichert!");
+                document.getElementById("signatureModal").style.display = "none";
+                loadUserSignature(); // Liste neu laden
+            } else {
+                alert("❌ Fehler: " + result.message);
+            }
+        } catch (err) {
+            alert("❌ Fehler beim Speichern: " + err);
+        }
+    };
+
+        document.getElementById("stamp").addEventListener("click", async () => {
+        const fileId = "@Model.Id"; // wichtig, Id mitgeben falls du sie brauchst
+        const res = await fetch(`/Dokument/Bearbeiten?handler=StampText&id=${fileId}`);
+        const result = await res.json();
+
+        if (!result.success) {
+            alert("❌ Stempel konnte nicht geladen werden.");
+            return;
+        }
+
+        // Text als PNG generieren
+        const base64Stamp = await renderStampToImage(result.text);
+        addSignatureBox(base64Stamp, "stamp");
+    });
+
+    // Hilfsfunktion: Text → Canvas → Base64
+            async function renderStampToImage(text, color = "#003366", withBorder = true) {
+        const parts = text.split(" - ");
+        const firma = parts[0] || "Firma Unbekannt";
+        const datum = parts[1] || new Date().toLocaleDateString();
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 600;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d");
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Rahmen (nur wenn Checkbox aktiv)
+        if (withBorder) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+        }
+
+        // Firmenname
+        ctx.fillStyle = color;
+        ctx.font = "bold 48px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(firma, canvas.width / 2, 100);
+
+        // Datum
+        ctx.font = "32px Arial";
+        ctx.fillText(datum, canvas.width / 2, 150);
+
+        return canvas.toDataURL("image/png");
+    }
+
+        // Drehen 90° rechts
+    document.getElementById("rotate").addEventListener("click", () => {
+        currentRotation = (currentRotation + 90) % 360;
+        renderPage(pageNum, currentScale); // neu rendern mit Rotation
+    });
+
+    // Zoom +
+    document.getElementById("zoomIn").addEventListener("click", () => {
+        currentScale *= 1.2; // 20% größer
+        renderPage(pageNum, currentScale);
+    });
+
+    // Zoom -
+    document.getElementById("zoomOut").addEventListener("click", () => {
+        currentScale /= 1.2; // 20% kleiner
+        renderPage(pageNum, currentScale);
+    });
+
+        function logSIS(message, type = "info") {
+        const container = document.getElementById("sisLogContainer");
+        if (!container) return;
+
+        const entry = document.createElement("div");
+        entry.classList.add("sis-log-entry", `sis-log-${type}`);
+        const time = new Date().toLocaleTimeString();
+
+        entry.textContent = `[${time}] ${message}`;
+        container.appendChild(entry);
+
+        // Auto-scroll vers le bas
+        container.scrollTop = container.scrollHeight;
+    }
+
+
+
+</script>
+
+
+<style>
+    #metaModal .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+        max-width: 90%;
+        text-align: center;
+    }
+
+    #editorLayout {
+        display: grid;
+        grid-template-columns: 200px 1fr 200px;
+        height: 100vh;
+    }
+
+    .toolbar {
+        background: #2c2c2c;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+    }
+
+        .toolbar button {
+            background: #444;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            color: white;
+        }
+
+            .toolbar button:hover {
+                background: #666;
+            }
+
+    #viewerContainer {
+        position: relative; /* WICHTIG: damit die Signaturbox relativ zur PDF sitzt */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        background: #2c2c2c;
+        overflow: auto;
+        padding: 0;
+    }
+
+    .signature-box {
+        position: absolute;
+        width: 150px;
+        height: 80px;
+        border: 2px dashed #007bff;
+        cursor: move;
+        z-index: 1000;
+    }
+
+        .signature-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+    #pdfRenderer {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        border: none; /* keine Border */
+        margin: 0 auto;
+        background: white; /* nur die Seite bleibt weiß */
+    }
+
+    #pageControls {
+        margin-top: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    body {
+        background: #2c2c2c;
+    }
+
+    #viewerContainer {
+        background: #2c2c2c;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        width: 450px; /* Fixe Breite */
+        max-width: 90%; /* mobil-freundlich */
+    }
+
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 22px;
+        font-weight: bold;
+        color: #333;
+        cursor: pointer;
+    }
+
+        .close:hover {
+            color: red;
+        }
+
+    #savedSignatureList {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .saved-signature-thumb {
+        border: 1px solid #ccc;
+        padding: 5px;
+        cursor: pointer;
+        background: #f9f9f9;
+        text-align: center;
+    }
+
+        .saved-signature-thumb img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+    #saveModal .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+        max-width: 90%;
+    }
+
+    .signature-box {
+        position: absolute;
+        border: 2px dashed #007bff;
+        cursor: move;
+        z-index: 1000;
+    }
+
+        .signature-box img {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+    .signature-box {
+        position: absolute;
+        border: 2px dashed transparent; /* standard unsichtbar */
+        cursor: move;
+        z-index: 1000;
+    }
+
+        .signature-box.focused {
+            border: 2px dashed #007bff; /* sichtbar nur bei Fokus */
+        }
+
+        .signature-box .resize-handle {
+            display: none; /* Standard: unsichtbar */
+        }
+
+        .signature-box.focused .resize-handle {
+            display: block; /* Nur sichtbar bei Fokus */
+        }
+
+    .signature-controls {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        display: none;
+        gap: 5px;
+        z-index: 2000;
+    }
+
+    .signature-box.focused .signature-controls {
+        display: flex; /* nur bei Fokus sichtbar */
+    }
+
+    .signature-controls button {
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+        .signature-controls button:hover {
+            background: rgba(220,0,0,0.8);
+        }
+
+    #stampEditModal .modal-content {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+        max-width: 90%;
+        text-align: center;
+    }
+
+    /* Einheitliche Dark-Theme Modals */
+    /* Einheitliche Dark-Theme Modals */
+    .modal-content {
+        background: #1e1e1e !important;
+        color: #f0f0f0 !important;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        width: 450px;
+        max-width: 90%;
+        box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+        /* Alle Texte in den Modals */
+        .modal-content h3,
+        .modal-content h4,
+        .modal-content label,
+        .modal-content p {
+            color: #f0f0f0 !important;
+        }
+
+        /* Inputs */
+        .modal-content input[type="text"],
+        .modal-content input[type="color"],
+        .modal-content input[type="checkbox"] {
+            background: #2c2c2c;
+            color: #f0f0f0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 6px;
+        }
+
+        /* Basis-Button Style */
+        .modal-content button {
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+            .modal-content button:hover {
+                transform: scale(1.05);
+            }
+
+            /* Positive Aktionen (✔ Speichern / Übernehmen) */
+            .modal-content button#applyStampChanges,
+            .modal-content button#saveSignature,
+            .modal-content button#confirmSave,
+            .modal-content button#editMeta {
+                background: #2e7d32; /* Dunkelgrün */
+                color: #fff;
+            }
+
+                .modal-content button#applyStampChanges:hover,
+                .modal-content button#saveSignature:hover,
+                .modal-content button#confirmSave:hover,
+                .modal-content button#editMeta:hover {
+                    background: #388e3c; /* Heller Grün beim Hover */
+                }
+
+            /* Negative Aktionen (❌ Abbrechen / Löschen) */
+            .modal-content button#cancelStampChanges,
+            .modal-content button#cancelSave,
+            .modal-content button#clearSignature,
+            .modal-content button#skipMeta {
+                background: #c62828; /* Dunkelrot */
+                color: #fff;
+            }
+
+                .modal-content button#cancelStampChanges:hover,
+                .modal-content button#cancelSave:hover,
+                .modal-content button#clearSignature:hover,
+                .modal-content button#skipMeta:hover {
+                    background: #e53935; /* Heller Rot beim Hover */
+                }
+
+            /* Neutrale Aktionen (z. B. Speichern als Favorit) */
+            .modal-content button#saveSignaturePermanent {
+                background: #1565c0; /* Blau */
+                color: #fff;
+            }
+
+                .modal-content button#saveSignaturePermanent:hover {
+                    background: #1976d2;
+                }
+
+    /* Close-X */
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 22px;
+        font-weight: bold;
+        color: #bbb;
+        cursor: pointer;
+    }
+
+        .close:hover {
+            color: #ff5555;
+        }
+
+    .highlight-box {
+        position: absolute;
+        background: rgba(255, 235, 59, 0.5); /* Gelb, halbtransparent */
+        border-radius: 4px;
+        pointer-events: none; /* damit man durch klicken nicht blockiert */
+    }
+
+
+    .pdf-page canvas:nth-child(2) {
+        cursor: crosshair;
+    }
+    /* Metadaten Modal */
+    .metadata-form {
+        background: #1e1e1e;
+        color: #f0f0f0;
+        width: 600px;
+        max-width: 95%;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        text-align: left;
+    }
+
+        .metadata-form h3 {
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-align: center;
+            color: #fff;
+        }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        color: #bbb;
+    }
+
+    .form-group input {
+        background: #2c2c2c;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 8px;
+        color: #f0f0f0;
+        font-size: 0.95rem;
+        width: 100%;
+    }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 6px rgba(0,123,255,0.5);
+        }
+
+    /* Buttons */
+    .modal-actions {
+        margin-top: 20px;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+    .btn-danger {
+        background: #ff4444;
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background: #cc0000;
+        }
+
+    #sisLogPanel {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 380px;
+        max-height: 250px;
+        background: rgba(30, 30, 30, 0.9);
+        color: #00ff88;
+        font-family: monospace;
+        font-size: 13px;
+        border-radius: 10px;
+        overflow-y: auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #sisLogHeader {
+        background: #111;
+        padding: 6px 10px;
+        color: #0ff;
+        font-weight: bold;
+        border-bottom: 1px solid #333;
+    }
+
+    #sisLogContainer {
+        flex: 1;
+        padding: 8px;
+        overflow-y: auto;
+    }
+
+    .sis-log-entry {
+        margin-bottom: 4px;
+    }
+
+    .sis-log-join {
+        color: #66ff66;
+    }
+
+    .sis-log-leave {
+        color: #ff6666;
+    }
+
+    .sis-log-change {
+        color: #00ffff;
+    }
+
+    .sis-log-info {
+        color: #cccccc;
+    }
+
+</style>

@@ -1,0 +1,399 @@
+﻿@page
+@model DmsProjeckt.Pages.Admin.MeinBenutzerModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<style>
+
+    :root {
+        --main-bg: #23262b;
+        --card-bg: #181a1e;
+        --signature-yellow: #ffce48;
+        --signature-yellow-light: #fffbe7;
+        --signature-shadow: 0 3px 18px #ffce4840, 0 1px 5px #ffce4810;
+    }
+
+    /* Container Cards */
+    .page-userlist-card {
+        background: linear-gradient(135deg, var(--main-bg) 90%, #2d2e33 100%);
+        border-radius: 17px;
+        box-shadow: var(--signature-shadow);
+        border: 1.5px solid #ffce4840;
+        padding: 1.2rem 1.4rem 1.3rem 1.4rem;
+        margin: 1.4rem auto 1.6rem auto;
+        max-width: 840px;
+        width: 98vw;
+    }
+
+        .page-userlist-card h2 {
+            color: var(--signature-yellow);
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: 0.01em;
+            margin-bottom: 1.4rem;
+        }
+
+    .audit-log-card {
+        background: var(--card-bg);
+        border-radius: 14px;
+        box-shadow: var(--signature-shadow);
+        margin-top: 2.0rem;
+        border: 1.5px solid #ffce4820;
+        overflow: hidden;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        .audit-log-card .card-header {
+            background: linear-gradient(90deg,#ffce48 30%, #2d2e33 160%);
+            color: #23262b;
+            font-weight: 800;
+            font-size: 1.04em;
+            padding: 0.65rem 1.1rem;
+            border-radius: 13px 13px 0 0;
+            letter-spacing: 0.02em;
+        }
+
+        .audit-log-card .card-body {
+            padding: 0;
+        }
+
+    /* Table / Tabelle */
+    .table-signature {
+        background: #212228;
+        color: #fffbe7;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 9px #ffce4830;
+        font-size: 0.98em;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-bottom: 0;
+    }
+
+        .table-signature thead tr {
+            background: linear-gradient(90deg, #ffe17a 60%, #22272e 100%);
+        }
+
+        .table-signature th {
+            color: #222;
+            font-weight: 700;
+            font-size: 0.97em;
+            padding: 0.6em 0.7em;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--signature-yellow);
+            text-shadow: 0 1px 0 #fffb;
+        }
+
+        .table-signature td {
+            color: #fffbe7;
+            padding: 0.54em 0.7em;
+            vertical-align: middle;
+            border: none;
+            background: #22262b;
+            font-size: 0.97em;
+        }
+
+        .table-signature tbody tr:hover {
+            background: linear-gradient(90deg,#ffe8aa33 8%,#23262b 85%);
+            color: #212;
+        }
+
+        .table-signature .badge-role {
+            font-size: 0.97em;
+            padding: 0.33em 0.68em;
+        }
+
+    .badge-admin {
+        background: #dc3545;
+        color: #fff;
+    }
+
+    .badge-editor {
+        background: #ffce48;
+        color: #3b2f00;
+    }
+
+    .badge-viewer {
+        background: #28a745;
+        color: #fff;
+    }
+
+    /* Buttons */
+    .btn-signature {
+        background: linear-gradient(90deg,#ffce48 75%,#fffbe7 120%);
+        color: #23262b;
+        font-weight: 700;
+        border-radius: 6px;
+        border: 1.2px solid #ffce48b0;
+        box-shadow: 0 1px 5px #ffe48c35;
+        font-size: 0.99em;
+        padding: 0.36em 1em;
+        margin: 0.15em 0;
+        transition: background .12s, color .12s;
+    }
+
+        .btn-signature:hover, .btn-signature:focus {
+            background: linear-gradient(90deg,#fffbe7 20%,#ffce48 80%);
+            color: #181a1e;
+        }
+
+    .form-select, select {
+        border: 1.2px solid #ffce48b0;
+        border-radius: 6px;
+        background: #23272e;
+        color: #ffce48;
+        font-weight: 600;
+        padding: 0.32em 0.7em;
+        font-size: 0.96em;
+        height: 2.15em;
+        margin-bottom: 0.12em;
+    }
+
+        .form-select:focus {
+            border-color: #ffce48;
+            box-shadow: 0 1.5px 8px #ffce4840;
+        }
+
+    /* Messages */
+    .alert-success {
+        background: linear-gradient(90deg,#fff8d2 30%,#51ff6c17 100%);
+        color: #263209;
+        font-weight: 600;
+        border: 1.3px solid #c9ef99;
+        font-size: 0.99em;
+        padding: 0.55em 1.1em;
+        margin-bottom: 1.1em;
+        border-radius: 7px;
+    }
+
+    .alert-danger {
+        background: linear-gradient(90deg,#ffd6d6 30%,#ffce4816 100%);
+        color: #651c1c;
+        font-weight: 600;
+        border: 1.3px solid #ffb7b7;
+        font-size: 0.99em;
+        padding: 0.55em 1.1em;
+        margin-bottom: 1.1em;
+        border-radius: 7px;
+    }
+
+    /* Audit Log Table */
+    .audit-log-card table {
+        background: transparent !important;
+        color: #fffbe7;
+        width: 100%;
+    }
+
+    .audit-log-card thead tr {
+        background: #ffe17a;
+        color: #333;
+    }
+
+    .audit-log-card th {
+        padding: 0.62em 0.9em;
+        color: #23262b;
+        border-bottom: 1.4px solid #ffce4867;
+        font-size: 0.97em;
+    }
+
+    .audit-log-card td {
+        padding: 0.62em 0.9em;
+        font-size: 0.98em;
+        background: #22272e;
+    }
+
+    .text-warning {
+        color: #ffce48 !important;
+    }
+
+    .text-info {
+        color: #19c7ff !important;
+    }
+
+    .text-success {
+        color: #51ff6c !important;
+    }
+
+    .text-muted {
+        color: #a4aab2 !important;
+    }
+
+    .text-white {
+        color: #fff !important;
+    }
+
+    @@media (max-width: 700px) {
+        .page-userlist-card {
+            padding: 0.7rem 0.1rem 1rem 0.1rem;
+            max-width: 99vw;
+        }
+
+        .audit-log-card {
+            margin-top: 1.2rem;
+            padding: 0;
+            max-width: 99vw;
+        }
+
+        .table-signature th, .table-signature td {
+            padding: 0.36em 0.19em;
+            font-size: 0.96em;
+        }
+    }
+</style>
+<div class="page-userlist-card">
+    <h2>
+        <span class="emoji">👤</span> Von mir erstellte Benutzer
+    </h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <table class="table-signature">
+        <thead>
+            <tr>
+                <th>Benutzername</th>
+                <th>E-Mail</th>
+                <th>Rolle</th>
+                <th>Aktion</th>
+                <th>Passwort</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in Model.Users)
+            {
+                var roleClass = user.Role switch
+                {
+                    "Admin" => "badge-role badge-admin",
+                    "Editor" => "badge-role badge-editor",
+                    "Viewer" => "badge-role badge-viewer",
+                    _ => "badge-role bg-secondary"
+                };
+
+                var roleLabel = user.Role switch
+                {
+                    "Admin" => "<span class='emoji'>🛡️</span> Admin",
+                    "Editor" => "<span class='emoji'>🖋️</span> Editor",
+                    "Viewer" => "<span class='emoji'>👀</span> Viewer",
+                    _ => user.Role
+                };
+
+                <tr>
+                    <td class="fw-bold">@user.UserName</td>
+                    <td class="fw-bold">@user.Email</td>
+                    <td>
+                        <span class="@roleClass" style="white-space: nowrap;">@Html.Raw(roleLabel)</span>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="ChangeRole" class="d-flex flex-column">
+                            <input type="hidden" name="UserId" value="@user.UserId" />
+                            <select name="SelectedRole" class="form-select">
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <option value="@role" selected="@(role == user.Role)">
+                                        @role
+                                    </option>
+                                }
+                            </select>
+                            <button type="submit" class="btn-signature mt-2">
+                                🔄 Aktualisieren
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-signature"
+                                onclick="editPasswort('@user.UserId', '@user.UserName')">
+                            🔑 Passwort setzen/löschen
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- 🌈 Audit Log Section -->
+<div class="audit-log-card">
+    <div class="card-header">
+        📝 Aktivitätsprotokoll Ihrer Benutzer
+    </div>
+    <div class="card-body">
+        @if (Model.Logs != null && Model.Logs.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>⏰ Zeitpunkt</th>
+                        <th>⚙️ Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Logs)
+                    {
+                        <tr>
+                            <td class="text-warning fw-semibold">@log.Timestamp.ToString("HH:mm dd.MM.yyyy")</td>
+                            <td class="text-info fw-semibold">@log.Action</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-muted p-3">Keine Aktivitäten vorhanden.</div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function editPasswort(userId, userName) {
+            Swal.fire({
+                title: '🔑 Passwort setzen/löschen',
+                html: `<div style='color:#fff; font-size:1.1em; margin-bottom:10px'>User: <b>${userName}</b></div>
+                    <input id="swal-passwort" class="swal2-input" style="color:#fff;background:#181f2a" placeholder="Neues Passwort (leer = löschen)" type="password">`,
+                background: '#222b3a',
+                color: '#fff',
+                showCancelButton: true,
+                confirmButtonText: 'Speichern',
+                cancelButtonText: 'Abbrechen',
+                focusConfirm: false,
+                preConfirm: () => document.getElementById('swal-passwort').value
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                const neuesPasswort = result.value;
+                fetch('?handler=SetzeBenutzerPasswort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userId, neuesPasswort: neuesPasswort })
+                })
+                .then(res => res.json())
+                .then(json => {
+                    if (json.success)
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Gespeichert',
+                            background: '#222b3a',
+                            color: '#fff',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => location.reload());
+                    else Swal.fire({
+                        icon: 'error',
+                        title: 'Fehler',
+                        text: json.message || 'Unbekannter Fehler.',
+                        background: '#222b3a',
+                        color: '#fff'
+                    });
+                });
+            });
+        }
+    </script>
+}

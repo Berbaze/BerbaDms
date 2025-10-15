@@ -1,0 +1,355 @@
+﻿@page "{workflowId:int}/{stepId:int}"
+@model StepDetailModel
+@{
+    var vm = Model.VM;
+}
+<div class="back-link">
+    <a asp-page="/Tests/Aufgaben">← Zurück zu Aufgaben</a>
+</div>
+<div class="container mt-4">
+
+    <!-- Workflow Info Card -->
+    <div class="workflow-info-card mb-4 p-4 rounded-3 shadow-sm bg-dark">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="mb-0" style="color:#90caf9;">Workflow: @vm.Workflow.Title</h2>
+        </div>
+        <div class="mb-2">
+            <span class="me-3"><strong>Erstellt von:</strong> @vm.Workflow.CreatedByUser?.Vorname @vm.Workflow.CreatedByUser?.Nachname</span>
+            <span class="me-3"><strong>Start:</strong> @vm.Workflow.CreatedAt.ToString("dd.MM.yyyy")</span>
+        </div>
+        <div class="mb-2">
+            <strong>Beschreibung:</strong> @vm.Workflow.Description
+        </div>
+        <div>
+            <strong>Workflow-Dokumente:</strong>
+            @if (vm.Dokumente.Any())
+            {
+                <ul class="mb-0 ps-3">
+                    @foreach (var d in vm.Dokumente)
+                    {
+                        <li class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <a href="@d.Dateipfad" target="_blank">@d.Dateiname</a>
+                                <span class="badge bg-info ms-1">workflow</span>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary toggle-options"
+                                    data-filename="@d.Dateiname"
+                                    data-url="@d.Dateipfad"
+                                    data-id="@d.Id">
+                                ⋮
+                            </button>
+                        </li>
+                    }
+
+                </ul>
+            }
+            else
+            {
+                <span class="text-muted ms-2">Keine Dokumente hinzugefügt.</span>
+            }
+        </div>
+    </div>
+
+    <!-- Step Timeline -->
+    <div class="timeline">
+        @foreach (var step in vm.Steps.OrderBy(s => s.Order))
+        {
+            bool isCurrentOpen = (step.Id == vm.AktuellerStepId && !step.Completed);
+
+            <div class="step-card mb-4 p-4 bg-secondary rounded-3 shadow-sm position-relative @(isCurrentOpen ? "border border-info" : "")">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h4 class="step-category mb-0">@step.Kategorie</h4>
+                    <span class="badge @(step.Completed ? "bg-success" : "bg-warning text-dark")">
+                        @(step.Completed ? "Erledigt" : "Ausstehend")
+                    </span>
+                </div>
+                <div class="mb-1"><strong>Beschreibung:</strong> @step.Description</div>
+                <div class="meta-grid mb-1">
+                    <div>
+                        <strong>Bearbeiter:</strong>
+                        <span>@step.AssignedToUser?.Vorname @step.AssignedToUser?.Nachname</span>
+                    </div>
+                    <div>
+                        <strong>Fällig bis:</strong> @step.DueDate?.ToString("dd.MM.yyyy HH:mm")
+                    </div>
+                </div>
+               
+                <div class="mt-3">
+                    @{
+                        var isCommentOpen = (Model.OffenesKommentarStepId == step.Id && Model.Request.Method == "POST");
+                    }
+
+                    <button type="button"
+                            class="btn btn-link text-light ps-0"
+                            onclick="bootstrap.Collapse.getOrCreateInstance(document.getElementById('comments-@step.Id')).toggle()">
+                        💬 Kommentare anzeigen/verbergen
+                    </button>
+
+                   
+
+                    <div class="collapse @(isCommentOpen ? "show" : "")" id="comments-@step.Id">
+                        <div class="comment-section mt-2 ps-2">
+                            @if (vm.StepKommentare.ContainsKey(step.Id) && vm.StepKommentare[step.Id].Any())
+                            {
+                                <ul class="list-unstyled">
+                                    @foreach (var k in vm.StepKommentare[step.Id].OrderBy(c => c.CreatedAt))
+                                    {
+                                        <li class="mb-2">
+                                            <div class="d-flex align-items-center mb-1">
+                                                <span class="fw-bold me-2">@k.User?.Vorname @k.User?.Nachname</span>
+                                                <span class="text-muted" style="font-size:0.92em;">@k.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                            </div>
+                                            <div class="bg-dark px-3 py-2 rounded-3" style="border-left:3px solid #90caf9;">@k.Text</div>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Noch keine Kommentare.</span>
+                            }
+
+                            <form method="post" class="mt-3">
+                                <input type="hidden" name="StepId" value="@step.Id" />
+                                <textarea name="Kommentar" class="form-control mb-2" placeholder="Kommentar hinzufügen..."></textarea>
+                                <button class="btn btn-primary btn-sm">Kommentar speichern</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @if (isCurrentOpen)
+                {
+                    @if (step.UserId == Model.CurrentUserId)
+                    {
+                        <div class="step-card-footer d-flex justify-content-end gap-2">
+                            @* Wenn Upload-Step -> Button zum Upload *@
+                            @if (step.Kategorie == "Upload")
+                            {
+                                <div class="mt-3">
+                                    <form method="post" enctype="multipart/form-data" asp-page-handler="Upload">
+                                        <input type="hidden" name="StepId" value="@step.Id" />
+                                        <div class="mb-2">
+                                            <label class="form-label">Datei für diesen Schritt hochladen</label>
+                                            <input type="file" name="Dateien" class="form-control" multiple />
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">📤 Hochladen</button>
+                                    </form>
+                                </div>
+                            }
+
+                            @* Genereller "Erledigt"-Button *@
+                            <form asp-page-handler="Erledigen" method="post">
+                                <input type="hidden" name="StepId" value="@step.Id" />
+                                <button type="submit" class="btn btn-success erledigt-btn">Erledigt</button>
+                            </form>
+                        </div>
+                    }
+                }
+
+            </div>
+        }
+    </div>
+</div>
+<div id="global-options-menu" class="options-menu">
+    <a href="#" id="opt-edit" class="option-item">✏️ Bearbeiten</a>
+    <a href="#" id="opt-open" target="_blank" class="option-item">📂 Öffnen</a>
+</div>
+@section Scripts {
+    <script>
+        const menu = document.getElementById("global-options-menu");
+        const editLink = document.getElementById("opt-edit");
+        const openLink = document.getElementById("opt-open");
+
+        document.addEventListener("click", (e) => {
+            if (e.target.classList.contains("toggle-options")) {
+                e.stopPropagation();
+
+                const button = e.target;
+                const filename = button.dataset.filename;
+                const url = button.dataset.url;
+                const docId = button.dataset.id;
+
+                // Links setzen
+                editLink.href = `/Dokument/Bearbeiten?id=${docId}&fromTask=true`;
+                openLink.href = url;
+
+                // Menü positionieren
+                const rect = button.getBoundingClientRect();
+                menu.style.top = `${rect.bottom + 4}px`;
+                menu.style.left = `${rect.left}px`;
+
+                menu.style.display = "block";
+                return;
+            }
+
+            if (e.target.closest(".option-item")) {
+                menu.style.display = "none";
+                return;
+            }
+
+            menu.style.display = "none";
+        });
+    </script>
+}
+
+<style>
+    /* =====================================
+       Step Detail Ansicht – Dark Theme UI
+       ===================================== */
+
+    body {
+        background-color: #12151c;
+        color: #d1d5db;
+      
+    }
+
+    a {
+        color: #4fd8ff;
+        text-decoration: none;
+    }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+    .back-link a {
+        font-weight: 500;
+        color: #4fd8ff;
+    }
+
+    /* Container und Info Card */
+    .workflow-info-card {
+        background-color: #1b2029 !important;
+        color: #e3e6ea;
+        border: 1px solid #2c3138;
+    }
+
+        .workflow-info-card h2 {
+            color: #4fd8ff;
+            font-weight: 600;
+            font-size: 1.6rem;
+        }
+
+        .workflow-info-card strong {
+            color: #90caf9;
+        }
+
+    /* Timeline Cards */
+    .step-card {
+        background-color: #1b2029;
+        color: #e0e0e0;
+        border: 1px solid #2c3138;
+    }
+
+        .step-card .step-category {
+            color: #4fd8ff;
+            font-weight: 600;
+        }
+
+        .step-card .badge {
+            font-size: 0.85rem;
+        }
+
+        .step-card .meta-grid {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+            font-size: 0.94rem;
+        }
+
+            .step-card .meta-grid strong {
+                color: #90caf9;
+            }
+
+    /* Kommentarbereich */
+    .comment-section textarea {
+        background-color: #1b2029;
+        border: 1px solid #2c3138;
+        color: #fff;
+    }
+
+        .comment-section textarea:focus {
+            border-color: #4fd8ff;
+            box-shadow: 0 0 0 0.15rem rgba(79, 216, 255, 0.25);
+        }
+
+    .comment-section .bg-dark {
+        background-color: #181c24 !important;
+        border-left: 3px solid #4fd8ff !important;
+        color: #fff;
+    }
+
+    .comment-section .fw-bold {
+        color: #4fd8ff;
+    }
+
+    .comment-section button.btn-primary {
+        background-color: #4fd8ff;
+        border: none;
+        color: #000;
+    }
+
+        .comment-section button.btn-primary:hover {
+            background-color: #38c8e0;
+        }
+
+    /* Footer-Erledigen Button */
+    .step-card-footer {
+        margin-top: 1.5rem;
+    }
+
+    .erledigt-btn {
+        background-color: #4caf50;
+        border: none;
+        color: #fff;
+    }
+
+        .erledigt-btn:hover {
+            background-color: #3e8e41;
+        }
+
+    /* Collapse Transition */
+    #comments .collapse {
+        transition: all 0.3s ease-in-out;
+    }
+
+    /* Badges */
+    .badge.bg-info {
+        background-color: #4fd8ff !important;
+        color: #000 !important;
+    }
+
+    /* Scroll-Fallbacks */
+    .timeline {
+        padding-bottom: 4rem;
+    }
+
+    .options-menu {
+        display: none;
+        position: fixed;
+        background: #22232a;
+        border: 1px solid #33343b;
+        border-radius: 6px;
+        padding: 6px 0;
+        min-width: 160px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    }
+
+    .option-item {
+        display: block;
+        padding: 6px 12px;
+        color: #e3e6ea;
+        text-decoration: none;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+        .option-item:hover {
+            background: #2d8cff33;
+            color: #4fd8ff;
+        }
+
+</style>

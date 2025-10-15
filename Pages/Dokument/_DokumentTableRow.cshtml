@@ -1,0 +1,169 @@
+﻿@model dynamic
+@using DmsProjeckt.Helpers
+@using System.Text.Encodings.Web
+@using System.Text.Json
+
+@{
+    bool isDokument = Model is DmsProjeckt.Data.Dokumente;
+    bool isFile = Model is DmsProjeckt.Data.DmsFile;
+
+    string id = Model.Id.ToString();
+    string name = isDokument ? Model.Dateiname : (Model.Name ?? "-");
+    string abteilung = isDokument ? (Model.Abteilung?.Name ?? "Unbekannt") : (Model.AbteilungName ?? "Unbekannt");
+    string kategorie = isDokument ? (Model.Kategorie ?? "Allgemein") : (Model.Kategorie ?? "Allgemein");
+    string benutzer = isDokument
+        ? $"{Model.ApplicationUser?.Vorname} {Model.ApplicationUser?.Nachname}".Trim()
+        : (Model.BenutzerVollerName ?? Model.ApplicationUserName ?? "-");
+
+    string hochgeladen = isDokument ? Model.HochgeladenAm.ToString("dd.MM.yy HH:mm") : (Model.HochgeladenAm?.ToString("dd.MM.yy HH:mm") ?? "-");
+    string status = isDokument ? Model.dtStatus.ToString() : (Model.Status ?? "Unbekannt");
+
+    string safeObjectPath = isDokument ? (Model.ObjectPath?.Replace("'", "\\'") ?? "") : (Model.Path ?? "");
+    bool isVersion = isDokument ? Model.IsVersion : (Model.IsVersion ?? false);
+    bool estSigne = isDokument ? (Model.EstSigne ?? false) : (Model.EstSigne ?? false);
+    bool isIndexed = isDokument ? (Model.IsIndexed ?? false) : (Model.IsIndexed ?? false);
+
+    // 🧠 Détermination de l’icône selon le type
+    string iconHtml = kategorie.ToLower() switch
+    {
+        "archiv" => "<i class='fas fa-archive text-warning me-1'></i>",
+        _ when isVersion => "<i class='bi bi-file-earmark-diff text-info me-1'></i>",
+        _ => "<i class='bi bi-file-earmark-text text-primary me-1'></i>"
+    };
+
+    // ✅ Sérialisation métadonnées (inchangée)
+    var meta = isDokument ? Model.MetadatenObjekt : (Model.MetadatenObjekt ?? null);
+
+    var stdMetaObj = new
+    {
+        Model.Id,
+        Name = name,
+        Kategorie = meta?.Kategorie ?? Model.Kategorie,
+        Beschreibung = meta?.Beschreibung,
+        Titel = meta?.Titel,
+
+        // 🧾 Champs facture / financiers
+        Rechnungsnummer = meta?.Rechnungsnummer,
+        Kundennummer = meta?.Kundennummer,
+        Rechnungsbetrag = meta?.Rechnungsbetrag,
+        Nettobetrag = meta?.Nettobetrag,
+        Steuerbetrag = meta?.Steuerbetrag,
+        Gesamtpreis = meta?.Gesamtpreis,
+        Rechnungsdatum = meta?.Rechnungsdatum,
+        Faelligkeitsdatum = meta?.Faelligkeitsdatum,
+
+        // 💳 Informations bancaires
+        IBAN = meta?.IBAN,
+        BIC = meta?.BIC,
+        Email = meta?.Email,
+        Telefon = meta?.Telefon,
+        Adresse = meta?.Adresse,
+
+        // 🏢 Structure
+        Abteilung = abteilung,
+        HochgeladenAm = Model.HochgeladenAm,
+        Status = status,
+        Indexiert = (Model.IsIndexed ?? false) ? "Ja" : "Nein",
+
+        // 🧠 🔹 PDF-Metadaten (ajout important)
+        PdfAutor = meta?.PdfAutor,
+        PdfBetreff = meta?.PdfBetreff,
+        PdfSchluesselwoerter = meta?.PdfSchluesselwoerter
+    };
+
+
+    string stdMeta = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(stdMetaObj)));
+    string idxMeta = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("{}"));
+    string usrMeta = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("[]"));
+}
+@{
+    bool isChunked = (isDokument && Model.IsChunked) || (isFile && (Model.IsChunked ?? false));
+
+    string previewUrl;
+
+    if (isChunked)
+    {
+        previewUrl = $"/api/dokumente/view/{Model.Id}";
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.SasUrl))
+    {
+        previewUrl = Model.SasUrl;
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.ObjectPath))
+    {
+        // 📦 Fallback pour les DmsFile simples stockés sur Firebase
+        var encodedPath = Uri.EscapeDataString(Model.ObjectPath);
+        previewUrl = $"https://storage.googleapis.com/berbaze-4fbc8.appspot.com/{encodedPath}";
+    }
+    else
+    {
+        previewUrl = "";
+    }
+}
+
+
+<tr style="cursor:pointer; background-color:#1f2126;"
+    ondblclick="openPreview('@name','@previewUrl','@id',@(isVersion.ToString().ToLower()))"
+    oncontextmenu="showFileContextMenuDynamic(
+        event,
+        '@id',
+        '@safeObjectPath',
+        '@Model.SasUrl',
+        '@stdMeta',
+        '@idxMeta',
+        '@usrMeta',
+        @(estSigne.ToString().ToLower()),
+        @(isIndexed.ToString().ToLower()),
+        true,true,'@JavaScriptEncoder.Default.Encode(name)'); return false;">
+
+    <!-- 📄 NAME -->
+    <td class="fw-bold text-white align-middle">
+        @Html.Raw(iconHtml)
+        <a href="javascript:void(0)"
+           onclick="openPreview('@name','@previewUrl','@id',false)"
+           class="text-decoration-none text-light fw-bold">
+            @name
+        </a>
+
+    </td>
+
+    <!-- 🏢 ABTEILUNG -->
+    <td class="text-white small align-middle">@abteilung</td>
+
+    <!-- 🗂️ KATEGORIE -->
+    <td class="text-white small align-middle">@kategorie</td>
+
+    <!-- 👤 BENUTZER -->
+    <td class="text-white small align-middle">
+        <i class="bi bi-person-circle text-info me-1"></i>@benutzer
+    </td>
+
+    <!-- 📅 HOCHGELADEN -->
+    <td class="text-white small align-middle">@hochgeladen</td>
+
+    <!-- ⚙️ AKTIONEN -->
+    <td class="text-center align-middle">
+        <button class="btn btn-sm btn-outline-light"
+                title="Optionen"
+                onclick="event.stopPropagation(); showFileContextMenuDynamic(
+                    event,
+                    '@id',
+                    '@safeObjectPath',
+                    '@Model.SasUrl',
+                    '@stdMeta',
+                    '@idxMeta',
+                    '@usrMeta',
+                    @(estSigne.ToString().ToLower()),
+                    @(isIndexed.ToString().ToLower()),
+                    true,true,'@JavaScriptEncoder.Default.Encode(name)'); return false;">
+            <i class="bi bi-three-dots-vertical"></i>
+        </button>
+    </td>
+
+    <!-- 📌 STATUS -->
+    <td class="fw-bold text-white align-middle">
+        <span class="badge @(StatusBadgeHelper.GetStatusBadgeClass(status))">
+            @status
+        </span>
+    </td>
+</tr>

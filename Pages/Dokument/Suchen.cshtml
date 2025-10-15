@@ -1,0 +1,1005 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.SuchenModel
+@{
+    ViewData["Title"] = "🔍 Dokumentensuche";
+}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+
+<style>
+    body {
+        background-color: #1f2128;
+        color: #f8f9fa;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .dms-title {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: #58d0ff;
+        margin-bottom: 1rem;
+        letter-spacing: 0.01em;
+        display: flex;
+        align-items: center;
+        gap: 0.6em;
+    }
+
+    .btn-group .dms-btn {
+        border-radius: 0.5rem;
+        min-width: 160px;
+        margin-right: 10px;
+    }
+
+    .dms-btn {
+        background-color: #58d0ff;
+        color: #23262d;
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        transition: all 0.2s ease-in-out;
+    }
+
+        .dms-btn:hover, .dms-btn:focus {
+            background-color: #58d0ff;
+            color: #1d1f25;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 199, 0, 0.3);
+        }
+
+        .dms-btn.active {
+            background-color: #58d0ff;
+            font-weight: bold;
+        }
+
+    .dms-section {
+        background: #2a2d34;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+        border: 1px solid #393c44;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .dms-searchbar {
+        background-color: #1d1f25;
+        border: 2px solid #58d0ff;
+        color: #58d0ff;
+        font-weight: 500;
+        border-radius: 0.4rem;
+        padding: 0.6rem 0.75rem;
+    }
+
+        .dms-searchbar:focus {
+            border-color: #58d0ff;
+            background: #23262d;
+            color: #58d0ff;
+        }
+
+    label, .form-label {
+        color: #58d0ff;
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+    }
+
+    table thead {
+        background: #191a1d;
+        color: #58d0ff;
+        font-size: 1.08rem;
+        border-bottom: 2px solid #58d0ff;
+    }
+
+    table tbody tr td {
+        background: #23262d;
+        color: #f8f9fa;
+        vertical-align: middle;
+    }
+
+    tr:nth-child(even) td {
+        background: #2b2d33 !important;
+        color: #58d0ff !important;
+    }
+
+    tr:nth-child(odd) td {
+        background: #23262d !important;
+        color: #f8f9fa !important;
+    }
+
+    tr:hover td {
+        background-color: #3a3d43 !important;
+        color: #58d0ff !important;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .table {
+        border-radius: 0.6rem;
+        overflow: hidden;
+    }
+
+    .awesomplete ul {
+        background: #2c2f36;
+        color: #58d0ff;
+        border: 1px solid #58d0ff;
+        border-radius: 0.6rem;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        margin-top: 0.25rem;
+    }
+
+    .awesomplete li:hover,
+    .awesomplete li[aria-selected="true"] {
+        background: #58d0ff;
+        color: #23262d;
+        font-weight: bold;
+    }
+
+    .filter-reset-btn {
+        background: transparent;
+        color: #58d0ff;
+        border: 2px dashed #58d0ff;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        margin-top: 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+
+        .filter-reset-btn:hover {
+            background: #58d0ff;
+            color: #23262d;
+            font-weight: bold;
+        }
+
+    /* Verlauf-Panel groß und modern */
+    #searchHistoryPanel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 540px;
+        height: 100vh;
+        min-height: unset;
+        background: #23262d;
+        border-left: 2px solid #58d0ff;
+        border-radius: 0;
+        box-shadow: -4px 0 32px rgba(0,0,0,0.22);
+        padding: 2.4rem 2.4rem 2rem 2.4rem;
+        z-index: 2500;
+        color: #58d0ff;
+        display: flex;
+        flex-direction: column;
+        transition: right 0.38s cubic-bezier(.55,.15,.17,1.08), opacity 0.22s;
+        opacity: 1;
+    }
+
+    #historyContent {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between; /* <-- ganz unten! */
+        min-height: 350px; /* Größe je nach Wunsch */
+        height: 100%;
+        min-height: 0;
+    }
+
+    #searchHistoryPanel.collapsed {
+        right: -600px !important;
+        opacity: 0.0;
+        pointer-events: none;
+        width: 540px !important;
+        padding: 2.4rem 2.4rem 2rem 2.4rem !important;
+    }
+
+        #searchHistoryPanel.collapsed #historyContent {
+            opacity: 0;
+            pointer-events: none;
+            max-height: 0;
+        }
+
+        #searchHistoryPanel.collapsed .history-title {
+            font-size: 0;
+        }
+
+    /* Verlauf-Button immer sichtbar, oben rechts */
+    #toggleHistoryBtn {
+        margin-left: 5px;
+        transition: transform 0.25s;
+        position: fixed;
+        top: 25px;
+        right: 30px;
+        z-index: 2550; /* Immer über Panel */
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        box-shadow: 0 2px 12px rgba(255,199,0,0.17);
+    }
+
+    #searchHistoryPanel .history-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1.1rem;
+        color: #58d0ff;
+        letter-spacing: 0.01em;
+        transition: font-size 0.2s;
+    }
+
+    #toggleHistoryIcon {
+        transition: transform 0.3s;
+    }
+    /* Drehe Icon wenn Panel offen/zu */
+    #searchHistoryPanel:not(.collapsed) #toggleHistoryIcon {
+        transform: rotate(180deg);
+    }
+
+    /* Responsive Verlauf Panel */
+    @@media (max-width: 991px) {
+        #searchHistoryPanel {
+            width: 100vw !important;
+            left: 0;
+            right: 0;
+            border-radius: 0;
+            padding: 1.2rem 1rem 1rem 1rem !important;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        #searchHistoryPanel {
+            width: 100vw !important;
+            left: 0;
+            right: 0;
+            border-radius: 0;
+            padding: 1.2rem 1rem 1rem 1rem !important;
+        }
+    }
+
+    .history-title {
+        font-size: 1.15rem;
+        font-weight: bold;
+        margin-bottom: 1.05rem;
+        color: #58d0ff;
+        text-align: left;
+    }
+
+    #historyList {
+        flex: 1 1 auto;
+        list-style: none;
+        margin: 0 0 1.1rem 0;
+        padding: 0;
+        max-height: 350px;
+        overflow-y: auto;
+        /* Optional: Abstand von Button */
+        margin-bottom: 1rem;
+    }
+
+        #historyList li {
+            padding: 0.32rem 0.3rem;
+            margin-bottom: 0.18rem;
+            border-radius: 0.4rem;
+            background: #1d1f25;
+            color: #58d0ff;
+            cursor: pointer;
+            font-size: 1.02rem;
+            transition: background 0.15s;
+            border-bottom: 1px solid #3e3e3e;
+        }
+
+            #historyList li:last-child {
+                border-bottom: none;
+            }
+
+            #historyList li:hover {
+                background: #58d0ff;
+                color: #23262d;
+                font-weight: bold;
+            }
+
+    .clear-history-btn {
+        display: block;
+        width: auto;
+        min-width: 0;
+        padding: 0.35em 1.2em;
+        margin: 1.2em auto 0 auto;
+        border-radius: 0.45em;
+        background: #58d0ff;
+        color: #23262d;
+        font-size: 1em;
+        font-weight: 600;
+        border: none;
+        transition: background .15s, color .15s, box-shadow .2s;
+        box-shadow: 0 2px 8px rgba(255,199,0,0.09);
+    }
+
+        .clear-history-btn:hover {
+            background: #58d0ff;
+            color: #23262d;
+        }
+
+        .clear-history-btn:focus {
+            background: #58d0ff;
+            color: #1d1f25;
+            box-shadow: 0 0 0 3px rgba(255, 199, 0, 0.18);
+        }
+
+    .table td .btn {
+        padding: 0.22rem 0.5rem;
+        font-size: 1.15rem;
+    }
+
+    /* MODAL BOOSTRAP: Immer über Verlauf */
+    .modal {
+        z-index: 4000 !important;
+    }
+
+    /* Für Email Modal */
+    .elegant-email-modal {
+        background: #1f2128 !important;
+        border-radius: 1.2rem;
+        border: 2px solid #58d0ff;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+        color: #58d0ff;
+        font-family: 'Segoe UI', 'Verdana', Arial, sans-serif;
+    }
+
+    /* Für Inputs im Modal */
+    .elegant-input {
+        background: #23262d !important;
+        color: #58d0ff !important;
+        border: 1.5px solid #58d0ff !important;
+        border-radius: 0.6rem !important;
+        font-size: 1.08rem !important;
+        box-shadow: none !important;
+    }
+
+        .elegant-input:focus {
+            background: #1d1f25 !important;
+            color: #58d0ff !important;
+            border-color: #58d0ff !important;
+        }
+
+    .elegant-send-btn {
+        font-weight: bold;
+        border-radius: 0.5rem;
+        letter-spacing: 0.01em;
+        transition: background 0.16s;
+    }
+
+        .elegant-send-btn:hover {
+            background: #58d0ff !important;
+            color: #1d1f25 !important;
+            box-shadow: 0 0 0 2px #ffe37a6b;
+        }
+
+    .table td, .table th {
+        overflow: visible !important;
+    }
+
+    .table {
+        overflow: visible !important;
+    }
+
+    .dms-section, .container, .table-responsive {
+        overflow: visible !important;
+    }
+
+    .dropdown-menu {
+        z-index: 3000 !important;
+    }
+
+    #historyList {
+        flex: 1 1 auto;
+        list-style: none;
+        margin: 0 0 1.1rem 0;
+        padding: 0;
+        max-height: 55vh; /* oder z.B. 340px, was dir gefällt */
+        overflow-y: auto;
+        scrollbar-color: #58d0ff #23262d; /* Moderne gelbe Scrollbar */
+        scrollbar-width: thin;
+    }
+
+        /* Für Webkit (Chrome, Edge, Safari) – schöner: */
+        #historyList::-webkit-scrollbar {
+            width: 8px;
+            background: #23262d;
+            border-radius: 8px;
+        }
+
+        #historyList::-webkit-scrollbar-thumb {
+            background: #58d0ff;
+            border-radius: 8px;
+        }
+
+            #historyList::-webkit-scrollbar-thumb:hover {
+                background: #58d0ff;
+            }
+
+    #historyListWrapper {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 0;
+        max-height: 100%;
+    }
+
+</style>
+
+
+
+<div class="container py-4">
+    <div class="dms-title">
+        <span>🔍</span> Dokumentensuche
+    </div>
+
+    <!-- Umschalter für alle Suchen -->
+    <div class="btn-group mb-4" role="group">
+        <button type="button" class="btn dms-btn active" id="btnIntelligent" onclick="zeigeSuche('intelligent')">Intelligente Suche</button>
+        <button type="button" class="btn dms-btn" id="btnIndex" onclick="zeigeSuche('index')">Index-/Metadaten-Suche</button>
+    </div>
+
+    <!-- Unsichtbares Feld zur Speicherung des aktiven Modus -->
+    <input type="hidden" id="currentSearchMode" name="CurrentSearchMode" value="@Model.CurrentSearchMode" />
+
+    <!-- Intelligente Suche -->
+    <div id="intelligent" class="dms-section" style="display:block;">
+        <label for="liveSearch" class="form-label" style="font-size: 1.13rem; font-weight: 600;">🔍 Intelligente Suche <span style="font-weight:400;font-size:1rem;color:#ffe37a;">(mit Autovervollständigung)</span></label>
+        <div style="color:#ffe9b6; font-size: 0.97rem; margin-bottom:12px;">
+            Gib einen Begriff ein (z. B. Dateiname, Kategorie, OCR-Text, UID …) – Vorschläge erscheinen automatisch.
+        </div>
+        <input id="liveSearch" class="form-control dms-searchbar" placeholder="Suchbegriff eingeben..." autocomplete="off" style="height: 52px; font-size: 1.14rem; padding: 10px 14px;" />
+        <div id="loader" class="my-2" style="display:none;">
+            <div class="spinner-border text-warning"></div> Suche läuft…
+        </div>
+    </div>
+
+    <!-- Erweiterte Index-/Metadaten-Suche -->
+    <div id="index" class="dms-section" style="display:none;">
+        <form method="get" autocomplete="off">
+            <input type="hidden" name="CurrentSearchMode" id="indexModeField" value="index" />
+            <div class="mb-2" style="font-size:1.09rem; color:#ffc700; font-weight:700;">
+                Metadaten gezielt durchsuchen
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-md-3">
+                    <label for="metaDateiname">Dateiname</label>
+                    <input id="metaDateiname" type="text" name="Filter.Dateiname" class="form-control dms-searchbar" placeholder="Dateiname..." value="@Model.Filter.Dateiname" />
+                </div>
+                <div class="col-md-3">
+                    <label for="metaRechnungsnummer">Rechnungsnummer</label>
+                    <input id="metaRechnungsnummer" type="text" name="Filter.Rechnungsnummer" class="form-control dms-searchbar" placeholder="Rechnungsnummer..." value="@Model.Filter.Rechnungsnummer" />
+                </div>
+                <div class="col-md-3">
+                    <label for="metaUIDNummer">UID Nummer</label>
+                    <input id="metaUIDNummer" type="text" name="Filter.UIDNummer" class="form-control dms-searchbar" placeholder="UID Nummer..." value="@Model.Filter.UIDNummer" />
+                </div>
+                <div class="col-md-3">
+                    <label for="metaOCRText">OCR Text</label>
+                    <input id="metaOCRText" type="text" name="Filter.OCRText" class="form-control dms-searchbar" placeholder="OCR Text..." value="@Model.Filter.OCRText" />
+                </div>
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                    <label for="metaKundennummer">Kundennummer</label>
+                    <input id="metaKundennummer" type="text" name="Filter.Kundennummer" class="form-control dms-searchbar" placeholder="Kundennummer..." value="@Model.Filter.Kundennummer" />
+                </div>
+                <div class="col-md-3">
+                    <label for="metaKategorie">Kategorie</label>
+                    <input id="metaKategorie" type="text" name="Filter.Kategorie" class="form-control dms-searchbar" placeholder="Kategorie..." value="@Model.Filter.Kategorie" />
+                </div>
+                <div class="col-md-3">
+                    <label for="metaBeschreibung">Beschreibung</label>
+                    <input id="metaBeschreibung" type="text" name="Filter.Beschreibung" class="form-control dms-searchbar" placeholder="Beschreibung..." value="@Model.Filter.Beschreibung" />
+                </div>
+            </div>
+            <button class="btn dms-btn" type="submit">🔎 Suchen</button>
+        </form>
+    </div>
+
+    <!-- Ergebnisse-Tabelle -->
+    <div class="dms-section" style="margin-bottom:3rem;">
+        <table class="table table-hover table-striped" style="margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Datum</th>
+                    <th>Kategorie</th>
+                    <th style="min-width: 120px;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody">
+                @foreach (var d in Model.Results)
+                {
+                    <tr>
+                        <td>@d.Dateiname</td>
+                        <td>@d.HochgeladenAm.ToString("g")</td>
+                        <td>@d.Kategorie</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-warning me-1" title="Herunterladen"
+                                    onclick="downloadDokument('@d.Dateiname', '@d.Id')">
+                                <i class="bi bi-download"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-info me-1" title="Vorschau"
+                                    onclick="previewDokument('@d.Dateiname', '@d.Id')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Teilen">
+                                    <i class="bi bi-share"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="shareEmail('@d.Dateiname')">
+                                            <i class="bi bi-envelope"></i> Per E-Mail teilen
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="shareLink('@d.Dateiname')">
+                                            <i class="bi bi-link-45deg"></i> Link kopieren
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Verlauf-Button (immer sichtbar) -->
+    <button id="toggleHistoryBtn"
+            onclick="toggleHistoryPanel()"
+            class="btn btn-warning"
+            style="position:fixed;right:30px;top:20px;z-index:3000;font-weight:600;letter-spacing:0.03em;box-shadow:0 2px 12px rgba(255,199,0,0.17)">
+        <i class="bi bi-clock-history" style="margin-right:0.5em"></i> Verlauf
+    </button>
+    <!-- Suchverlauf Sidebar -->
+    <div id="searchHistoryPanel" class="history-card shadow-lg">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="history-title">🔎 Suche Verlauf</div>
+        </div>
+        <div id="historyFilters" style="margin-bottom: 1em; text-align:left;">
+            <button class="btn btn-outline-info btn-sm me-2 active" data-filter="all" onclick="filterHistory(this)">Alle</button>
+            <button class="btn btn-outline-info btn-sm me-2" data-filter="today" onclick="filterHistory(this)">Heute</button>
+            <button class="btn btn-outline-info btn-sm me-2" data-filter="yesterday" onclick="filterHistory(this)">Gestern</button>
+            <button class="btn btn-outline-info btn-sm" data-filter="week" onclick="filterHistory(this)">Letzte 7 Tage</button>
+        </div>
+
+        <div id="historyContent"
+             style="padding-bottom: 1.2em; display:flex; flex-direction:column; height:85vh; min-height:400px;">
+            <!-- Tabellenkopf bleibt, nur die Zeilen scrollen -->
+            <table class="table table-dark table-sm" id="historyTable" style="font-size:1.05em; margin-bottom:0;">
+                <thead>
+                    <tr>
+                        <th style="width: 38%;">Suchbegriff</th>
+                        <th style="width: 28%;">Dateiname</th>
+                        <th style="width: 24%;">Zeit</th>
+                        <th style="width: 10%;">Aktion</th>
+                    </tr>
+                </thead>
+            </table>
+            <!-- Der Scrollbereich ist NUR um die Zeilen -->
+            <div id="historyListWrapper"
+                 style="flex:1 1 auto; overflow-y:auto; min-height:0; max-height:100%;">
+                <table class="table table-dark table-sm" style="font-size:1.05em; margin-bottom:0;">
+                    <tbody id="historyList">
+                        <!-- Dynamisch via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <button class="clear-history-btn" style="margin-top:1rem;" onclick="clearHistory()">Verlauf löschen</button>
+
+        </div>
+    </div>
+
+
+
+
+    <!-- Modal: Per E-Mail senden -->
+    <div class="modal fade" id="shareEmailModal" tabindex="-1" aria-labelledby="shareEmailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form id="shareEmailForm" class="modal-content elegant-email-modal">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title" id="shareEmailModalLabel">
+                        <i class="bi bi-envelope-paper-heart" style="color:#ffc700;"></i>
+                        &nbsp; Per E-Mail teilen
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body pt-0">
+                    <input type="hidden" id="shareEmailDateiname" name="Dateiname" />
+                    <div class="mb-3">
+                        <label for="empfaengerEmail" class="form-label">Empfänger E-Mail</label>
+                        <input type="email" class="form-control elegant-input" id="empfaengerEmail" name="Empfaenger" required placeholder="z.B. max@muster.de">
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailBetreff" class="form-label">Betreff</label>
+                        <input type="text" class="form-control elegant-input" id="emailBetreff" name="Betreff" value="Ihr Dokument" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="emailNachricht" class="form-label">Nachricht</label>
+                        <textarea class="form-control elegant-input" id="emailNachricht" name="Nachricht" rows="3">Im Anhang finden Sie Ihr Dokument.</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-warning elegant-send-btn">Senden</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: PDF Vorschau -->
+    <div class="modal fade" id="previewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <iframe id="pdfFrame" style="width:100%;height:80vh;" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+    <script>
+        // --- SUCHMODUS-Umschalter ---
+        function zeigeSuche(mode) {
+            document.getElementById('intelligent').style.display = (mode === 'intelligent') ? 'block' : 'none';
+            document.getElementById('index').style.display = (mode === 'index') ? 'block' : 'none';
+            document.getElementById('btnIntelligent').classList.toggle('active', mode === 'intelligent');
+            document.getElementById('btnIndex').classList.toggle('active', mode === 'index');
+            if (document.getElementById('currentSearchMode'))
+                document.getElementById('currentSearchMode').value = mode;
+            if (document.getElementById('indexModeField'))
+                document.getElementById('indexModeField').value = mode;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let mode = "intelligent";
+            const current = document.getElementById('currentSearchMode');
+            const url = new URL(window.location.href);
+            if (url.search.includes("Filter.")) mode = "index";
+            else if (current && current.value === "index") mode = "index";
+            zeigeSuche(mode);
+
+            if (mode === "intelligent") initLiveSearch();
+            else initIndexSearch();
+
+            document.getElementById('searchHistoryPanel').classList.add('collapsed');
+        });
+
+        // --- LIVESUCHE & AUTOCOMPLETE (INTELLIGENT) ---
+        function initLiveSearch() {
+            const input = document.getElementById("liveSearch");
+            const loader = document.getElementById("loader");
+            const tbody = document.getElementById("resultBody");
+            if (!input || !tbody || !loader) return;
+
+            rechercher(""); // alle Ergebnisse zu Start
+
+            const awesomplete = new Awesomplete(input, { minChars: 2, maxItems: 8, autoFirst: true });
+
+         async function rechercher(query) {
+            loader.style.display = 'block';
+            fetch(`?handler=SearchLive&query=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    tbody.innerHTML = data.map(d => `
+                        <tr>
+                            <td>${d.dateiname}</td>
+                            <td>${new Date(d.hochgeladenAm).toLocaleString()}</td>
+                            <td>${d.kategorie}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-warning me-1" title="Herunterladen"
+                                    onclick="downloadDokument('${d.dateiname.replace(/'/g, "\\'")}', '${d.id || ''}')">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-info me-1" title="Vorschau"
+                                    onclick="previewDokument('${d.dateiname.replace(/'/g, "\\'")}', '${d.id || ''}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false" title="Teilen">
+                                        <i class="bi bi-share"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="shareEmail('${d.dateiname.replace(/'/g, "\\'")}', '${d.id || ''}')">
+                                                <i class="bi bi-envelope"></i> Per E-Mail teilen
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="shareLink('${d.dateiname.replace(/'/g, "\\'")}', '${d.id || ''}')">
+                                                <i class="bi bi-link-45deg"></i> Link kopieren
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    // ✨ HIER: Dropdowns neu initialisieren!
+                    document.querySelectorAll('#resultBody .dropdown-toggle').forEach(function (el) {
+                        new bootstrap.Dropdown(el);
+                    });
+
+                    // --- Verlauf in DB speichern (Nur bei "echter" Suche) ---
+                    if (query && query.length > 1) saveSearchHistory(query);
+                })
+                .catch(err => console.error("❌ Fehler bei Suche:", err))
+                .finally(() => loader.style.display = 'none');
+        }
+
+            input.addEventListener("input", function () {
+                const q = input.value.trim();
+                if (q.length < 2) {
+                    if (q === "") rechercher("");
+                    return;
+                }
+                fetch(`?handler=Suggest&term=${encodeURIComponent(q)}`)
+                    .then(res => res.json())
+                    .then(data => { awesomplete.list = data; });
+            });
+
+            input.addEventListener("awesomplete-selectcomplete", function () {
+                const selected = input.value.trim();
+                if (selected) rechercher(selected);
+            });
+        }
+
+        // --- INDEX/FORMULAR-SUCHE (Metadaten) ---
+        function initIndexSearch() {
+            const form = document.querySelector("#index form");
+            if (!form) return;
+            form.addEventListener("submit", function (e) {
+                // Alle Textfelder auslesen (auch versteckte Filter!)
+                const fields = Array.from(form.querySelectorAll("input[type=text]"));
+                const filled = fields.filter(i => i.value && i.value.trim().length > 0);
+                if (filled.length === 0) return; // Leeres Formular = keine Speicherung
+
+                // Wir speichern alle ausgefüllten Felder in History, zusammengefasst
+                let term = filled.map(f =>
+                    (f.previousElementSibling ? f.previousElementSibling.textContent.trim() + ": " : "") + f.value.trim()
+                ).join(" | ");
+                saveSearchHistory(term);
+                // (Suchverlauf-Reload passiert später, weil neue Ergebnisse geladen werden)
+            });
+        }
+
+        // --- SUCHVERLAUF: Aus der Datenbank laden + Klick für Sofortsuche ---
+        let allHistoryItems = []; // Global speichern
+
+        async function loadHistory(filter = "all") {
+            const resp = await fetch('/api/SearchHistory/GetAll');
+            let items = await resp.json();
+            allHistoryItems = items; // Immer updaten
+
+            // Filtern nach Button
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            items = items.filter(entry => {
+                const d = new Date(entry.searchedAt);
+                d.setHours(0,0,0,0);
+                if (filter === "today") return isSameDay(today, d);
+                if (filter === "yesterday") return isYesterday(d);
+                if (filter === "week") return isThisWeek(d);
+                return true; // "all"
+            });
+
+            const tbody = document.getElementById('historyList');
+            tbody.innerHTML = '';
+            if (!items.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#bbb;">Kein Verlauf gefunden.</td></tr>';
+                return;
+            }
+            items.forEach(entry => {
+                tbody.innerHTML += `
+                    <tr style="cursor:pointer"
+                        onclick="fillSearchFromHistory('${entry.searchTerm.replace(/'/g, "\\'")}')">
+                        <td title="${entry.searchTerm}">
+                            ${entry.searchTerm && entry.searchTerm.length > 50
+                                ? entry.searchTerm.substring(0, 50) + '…'
+                                : entry.searchTerm || ''}
+                        </td>
+                        <td title="${entry.dokumentName || ''}">
+                            ${entry.dokumentName
+                                ? `<a href="/api/DokumentIndex/Download?file=${encodeURIComponent(entry.dokumentName)}" target="_blank">${entry.dokumentName.length > 30 ? entry.dokumentName.substring(0, 27) + '…' : entry.dokumentName}</a>`
+                                : '-'}
+                        </td>
+                        <td>
+                            ${new Date(entry.searchedAt).toLocaleString()}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteHistoryEntry(${entry.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        // Filter-Button Logik
+        function filterHistory(btn) {
+            // Buttons optisch umschalten
+            document.querySelectorAll("#historyFilters .btn").forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            loadHistory(btn.getAttribute("data-filter"));
+        }
+
+
+               // Beim Öffnen Verlauf laden (alle)
+        document.addEventListener("DOMContentLoaded", function () {
+            loadHistory();
+        });
+                // Diese Funktion füllt das Suchfeld und triggert die Suche
+        function fillSearchFromHistory(searchTerm) {
+            const input = document.getElementById('liveSearch');
+            if (input) {
+                input.value = searchTerm;
+                input.focus();
+                input.dispatchEvent(new Event('input')); // Autocomplete/triggert Suche
+            }
+        }
+        window.fillSearchFromHistory = fillSearchFromHistory; // global
+
+
+        // --- Verlauf speichern (POST an API) ---
+        async function saveSearchHistory(term, dokumentId = null) {
+            if (!term || term.length < 2) return;
+            await fetch('/api/SearchHistory/Add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ searchTerm: term, dokumentId: dokumentId })
+            });
+        }
+
+        // --- Verlauf löschen (alle) ---
+        async function clearHistory() {
+            if (confirm('Verlauf wirklich löschen?')) {
+                await fetch('/api/SearchHistory/ClearAll', { method: 'POST' });
+                loadHistory();
+            }
+        }
+
+        // --- Einzelnen Verlaufseintrag löschen ---
+        async function deleteHistoryEntry(id) {
+            await fetch(`/api/SearchHistory/Delete/${id}`, { method: 'DELETE' });
+            loadHistory();
+        }
+
+        // --- Panel öffnen/schließen + History laden ---
+        function toggleHistoryPanel() {
+            const panel = document.getElementById('searchHistoryPanel');
+            panel.classList.toggle('collapsed');
+            if (!panel.classList.contains('collapsed')) {
+                loadHistory();
+            }
+        }
+
+        // --- Verlauf-Eintrag klickt: Feld füllen & suchen (NEU!) ---
+        function fillAndSearchHistory(term) {
+            const input = document.getElementById("liveSearch");
+            if (input) {
+                input.value = term;
+                input.dispatchEvent(new Event("input"));
+            }
+            // Optional: Verlauf-Panel schließen:
+            // document.getElementById('searchHistoryPanel').classList.add('collapsed');
+        }
+        window.fillAndSearchHistory = fillAndSearchHistory;
+
+        // --- Download / Vorschau / Link / Email ---
+        function downloadDokument(dateiname, dokumentId) {
+            saveSearchHistory("Download: " + dateiname, dokumentId);
+            window.open(`/api/DokumentIndex/Download?file=${encodeURIComponent(dateiname)}`, '_blank');
+        }
+
+        let previewModalInstance = null;
+        function previewDokument(dateiname, dokumentId) {
+            saveSearchHistory("Vorschau: " + dateiname, dokumentId);
+            var url = `/api/DokumentIndex/Download?file=${encodeURIComponent(dateiname)}`;
+            document.getElementById('pdfFrame').src = url;
+            if (!previewModalInstance) {
+                previewModalInstance = new bootstrap.Modal(document.getElementById('previewModal'));
+            }
+            previewModalInstance.show();
+        }
+
+        function shareLink(dateiname) {
+            const link = `${window.location.origin}/Dokument/Download?file=${encodeURIComponent(dateiname)}`;
+            navigator.clipboard.writeText(link)
+                .then(() => alert("Link kopiert!"))
+                .catch(() => alert("Konnte Link nicht kopieren"));
+        }
+
+        function shareEmail(dateiname) {
+            document.getElementById('shareEmailDateiname').value = dateiname;
+            document.getElementById('empfaengerEmail').value = '';
+            var myModal = new bootstrap.Modal(document.getElementById('shareEmailModal'));
+            myModal.show();
+        }
+
+        document.getElementById('shareEmailForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const dateiname = document.getElementById('shareEmailDateiname').value;
+            const empfaenger = document.getElementById('empfaengerEmail').value;
+            const betreff = document.getElementById('emailBetreff').value;
+            const nachricht = document.getElementById('emailNachricht').value;
+            const response = await fetch('/api/DokumentIndex', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Dateiname: dateiname, Empfaenger: empfaenger, Betreff: betreff, Nachricht: nachricht })
+            });
+            if (response.ok) {
+                alert("E-Mail wurde erfolgreich gesendet!");
+                bootstrap.Modal.getInstance(document.getElementById('shareEmailModal')).hide();
+            } else {
+                alert("Fehler beim Senden der E-Mail!");
+            }
+        });
+                // Panel schließen, wenn außerhalb geklickt wird:
+        document.addEventListener('mousedown', function (event) {
+            var panel = document.getElementById('searchHistoryPanel');
+            var toggleBtn = document.getElementById('toggleHistoryBtn');
+            if (!panel.classList.contains('collapsed')) {
+                // Prüfen: Wurde NICHT im Panel und NICHT auf dem Button geklickt?
+                if (!panel.contains(event.target) && event.target !== toggleBtn) {
+                    panel.classList.add('collapsed');
+                }
+            }
+        });
+
+                document.addEventListener('keydown', function (event) {
+            if (event.key === "Escape") {
+                var panel = document.getElementById('searchHistoryPanel');
+                if (!panel.classList.contains('collapsed')) {
+                    panel.classList.add('collapsed');
+                }
+            }
+        });
+         function getMidnight(d) {
+            let x = new Date(d);
+            x.setHours(0, 0, 0, 0);
+            return x;
+        }
+               function isSameDay(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth() &&
+                   d1.getDate() === d2.getDate();
+        }
+
+        function isYesterday(date) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+
+            date = new Date(date);
+            date.setHours(0,0,0,0);
+
+            return date.getTime() === yesterday.getTime();
+        }
+
+        function isThisWeek(date) {
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const weekAgo = new Date(now);
+            weekAgo.setDate(now.getDate() - 6);
+
+            date = new Date(date);
+            date.setHours(0,0,0,0);
+
+            return date >= weekAgo && date <= now;
+        }
+
+
+
+        // --- GLOBALS ---
+        window.downloadDokument = downloadDokument;
+        window.previewDokument = previewDokument;
+        window.shareLink = shareLink;
+        window.shareEmail = shareEmail;
+        window.toggleHistoryPanel = toggleHistoryPanel;
+        window.clearHistory = clearHistory;
+        window.deleteHistoryEntry = deleteHistoryEntry;
+    </script>
+}

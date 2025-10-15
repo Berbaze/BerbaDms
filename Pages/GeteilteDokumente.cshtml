@@ -1,0 +1,235 @@
+﻿@page
+@model GeteilteDokumenteModel
+@{
+    ViewData["Title"] = "Geteilte Dokumente";
+}
+
+<div class="content-wrapper">
+    <h2 class="page-title">📂 Geteilte Dokumente</h2>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs custom-tabs" id="sharedTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="docs-byme-tab" data-bs-toggle="tab" data-bs-target="#docs-byme" type="button" role="tab">Dokumente – von mir</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="docs-withme-tab" data-bs-toggle="tab" data-bs-target="#docs-withme" type="button" role="tab">Dokumente – mit mir</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="notes-byme-tab" data-bs-toggle="tab" data-bs-target="#notes-byme" type="button" role="tab">Notizen – von mir</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="notes-withme-tab" data-bs-toggle="tab" data-bs-target="#notes-withme" type="button" role="tab">Notizen – mit mir</button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content mt-3">
+
+        <!-- Dokumente – von mir -->
+        <div class="tab-pane fade show active" id="docs-byme" role="tabpanel">
+            <h4 class="section-title">Von mir geteilte Dokumente</h4>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Dokument</th>
+                        <th>Geteilt mit</th>
+                        <th>Datum</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in Model.DocumentsSharedByMe)
+                    {
+                        <tr>
+                            <td>@doc.DokumentTitle</td>
+                            <td>@doc.SharedByUserName</td>
+                            <td>@doc.SharedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <a href="@doc.ObjectPath" class="btn btn-sm btn-cyan">Anzeigen</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.DocumentsSharedByMe.Any())
+            {
+                <div class="empty-hint">Keine geteilten Dokumente gefunden.</div>
+            }
+        </div>
+
+        <!-- Dokumente – mit mir -->
+        <div class="tab-pane fade" id="docs-withme" role="tabpanel">
+            <h4 class="section-title">Mit mir geteilte Dokumente</h4>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Dokument</th>
+                        <th>Geteilt von</th>
+                        <th>Datum</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in Model.DocumentsSharedWithMe)
+                    {
+                        <tr>
+                            <td>@doc.DokumentTitle</td>
+                            <td>@doc.SharedByUserName</td>
+                            <td>@doc.SharedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <a href="@doc.ObjectPath" class="btn btn-sm btn-cyan">Anzeigen</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.DocumentsSharedWithMe.Any())
+            {
+                <div class="empty-hint">Keine Dokumente wurden mit dir geteilt.</div>
+            }
+        </div>
+
+        <!-- Notizen – von mir -->
+        <div class="tab-pane fade" id="notes-byme" role="tabpanel">
+            <h4 class="section-title">Von mir geteilte Notizen</h4>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Notiz</th>
+                        <th>Geteilt mit</th>
+                        <th>Datum</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var note in Model.NotesSharedByMe)
+                    {
+                        <tr>
+                            <td>@note.NoteTitle</td>
+                            <td>@note.SharedUserName</td>
+                            <td>@note.SharedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <a href="@note.ObjectPath" class="btn btn-sm btn-cyan">Anzeigen</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.NotesSharedByMe.Any())
+            {
+                <div class="empty-hint">Keine geteilten Notizen gefunden.</div>
+            }
+        </div>
+
+        <!-- Notizen – mit mir -->
+        <div class="tab-pane fade" id="notes-withme" role="tabpanel">
+            <h4 class="section-title">Mit mir geteilte Notizen</h4>
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Notiz</th>
+                        <th>Geteilt von</th>
+                        <th>Datum</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var note in Model.NotesSharedWithMe)
+                    {
+                        <tr>
+                            <td>@note.NoteTitle</td>
+                            <td>@note.SharedUserName</td>
+                            <td>@note.SharedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <a href="@note.ObjectPath" class="btn btn-sm btn-cyan">Anzeigen</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.NotesSharedWithMe.Any())
+            {
+                <div class="empty-hint">Keine Notizen wurden mit dir geteilt.</div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<style>
+    .content-wrapper {
+        padding: 20px;
+    }
+
+    .page-title {
+        color: #4fd8ff;
+        margin-bottom: 20px;
+    }
+
+    .custom-tabs .nav-link {
+        background: #1b2029;
+        color: #d1d5db;
+        border: none;
+        padding: 8px 16px;
+    }
+
+        .custom-tabs .nav-link.active {
+            background: #263241;
+            color: #4fd8ff;
+        }
+
+    .section-title {
+        color: #4fd8ff;
+        margin-bottom: 10px;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #1b2029;
+        color: #d1d5db;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+
+        .custom-table thead {
+            background: #263241;
+            color: #4fd8ff;
+        }
+
+        .custom-table th, .custom-table td {
+            padding: 10px 12px;
+        }
+
+        .custom-table tbody tr:hover {
+            background: #212b36;
+        }
+
+    .btn-cyan {
+        background: #4fd8ff;
+        color: #191c24;
+        border: none;
+    }
+
+        .btn-cyan:hover {
+            background: #3ac7e8;
+            color: #fff;
+        }
+
+    .empty-hint {
+        color: #9ca3af;
+        font-style: italic;
+        margin-top: 5px;
+    }
+    /* Nur auf dieser Seite den Abstand reduzieren */
+    .page-geteilte-dokumente .content-area {
+        margin-left: 100px !important; /* oder sogar kleiner, je nach Wunsch */
+    }
+
+    .sidebar-collapsed .page-geteilte-dokumente .content-area {
+        margin-left: 0px !important; /* bleibt gleich für eingeklappte Sidebar */
+    }
+
+</style>

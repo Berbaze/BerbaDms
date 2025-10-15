@@ -1,0 +1,280 @@
+﻿@page
+@model DmsProjeckt.Pages.Workflows.IndexModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="back-link">
+    <a asp-page="/Index">← Zurück zur Startseite</a>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <h2 class="page-title mb-0">Alle Workflows</h2>
+    <a asp-page="./Erstellen" class="btn btn-primary mt-5">+ Neuer Workflow</a>
+</div>
+<table class="table-dark-custom">
+    <thead>
+        <tr>
+            <th>Titel</th>
+            <th>Erstellt</th>
+            <th>Letzte Änderung</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var workflow in Model.Workflows)
+        {
+            var nextStep = workflow.Steps?
+            .Where(s => !s.Completed)
+            .OrderBy(s => s.Order) // oder OrderBy(s => s.DueDate), je nachdem
+            .FirstOrDefault();
+
+            var nextStepId = nextStep?.Id ?? 0;
+
+            <tr>
+                <td>@workflow.Title</td>
+                <td>@(workflow.CreatedAt.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                <td>@(workflow.LastModified?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                <td class="text-nowrap">
+                    <button class="btn btn-sm btn-info me-1" onclick="openDetails(@workflow.Id, @nextStepId)">🔍 Details</button>
+                    @if (workflow.UserId == Model.CurrentUserId)
+                    {
+                        <a asp-page="Bearbeiten" asp-route-id="@workflow.Id" class="btn btn-sm btn-warning me-1">✏️ Bearbeiten</a>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDelete(@workflow.Id)">🗑️ Löschen</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<!-- Details Modal -->
+<!-- 🔍 Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Details</h5>
+                <button type="button" class="btn-close" onclick="closeModal()" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Inhalt kommt hier rein -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Delete Confirm Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title">Löschen bestätigen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                Möchtest du diesen Workflow wirklich löschen?
+            </div>
+            <div class="modal-footer">
+                <form method="post">
+                    <input type="hidden" id="deleteId" name="DeleteId" />
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="submit" class="btn btn-danger">Löschen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <script>
+        function confirmDelete(id) {
+            document.getElementById("deleteId").value = id;
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+                // Global definieren (nicht in DOMContentLoaded oder einer anderen Funktion kapseln)
+                                         function openDetails(workflowId, stepId) {
+            window.location.href = `/Workflows/StepDetail/${workflowId}/${stepId}`;
+        }
+
+
+
+
+
+
+
+                               function openModal() {
+            const modal = document.getElementById("detailsModal");
+            modal.classList.add("show");
+            modal.style.display = "block";
+            modal.removeAttribute("aria-hidden");
+            modal.setAttribute("aria-modal", "true");
+            modal.focus();
+
+            // Optional: Button automatisch fokussieren
+            const actionBtn = modal.querySelector("#actionBtn");
+            if (actionBtn) actionBtn.focus();
+        }
+
+                        function closeModal() {
+            const modalEl = document.getElementById("detailsModal");
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+
+
+        // 🎯 Beispiel-Button-Handler
+        document.addEventListener("DOMContentLoaded", () => {
+            const btn = document.getElementById("actionBtn");
+            if (btn) {
+                btn.addEventListener("click", () => {
+                    alert("Button funktioniert! ✅");
+                });
+            }
+        });
+
+
+
+    </script>
+}
+<style>
+    /* ========================
+       Workflow Custom Styling
+       ======================== */
+
+    /* Dark Table */
+    .table-dark-custom {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #1b2029;
+        color: #d1d5db;
+       
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+        margin-top: 1rem;
+    }
+
+        /* Table Header */
+        .table-dark-custom thead {
+            background-color: #222831;
+            color: #4fd8ff;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* Table Cells */
+        .table-dark-custom th,
+        .table-dark-custom td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #2c3138;
+            vertical-align: middle;
+        }
+
+        /* Hover Row */
+        .table-dark-custom tbody tr:hover {
+            background-color: #263241;
+            transition: background-color 0.2s ease;
+        }
+
+    /* Page Title */
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: #4fd8ff;
+       
+    }
+
+    /* Button Styles */
+    .btn-cyan {
+        background-color: #4fd8ff;
+        color: #000;
+        border: none;
+        transition: background 0.2s ease;
+    }
+
+        .btn-cyan:hover {
+            background-color: #38c8e0;
+            color: #000;
+        }
+
+    .btn-warning {
+        background-color: #f0ad4e;
+        color: #000;
+        border: none;
+    }
+
+        .btn-warning:hover {
+            background-color: #ec9c34;
+        }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: #fff;
+        border: none;
+    }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+    .btn-info {
+        background-color: #17a2b8;
+        color: #fff;
+        border: none;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    /* Buttons inside table */
+    .table-dark-custom .btn-sm {
+        font-size: 0.82rem;
+        padding: 6px 10px;
+        border-radius: 6px;
+        margin-right: 5px;
+    }
+
+    /* Modal Styling */
+    .modal-content {
+        background-color: #1b2029;
+        color: #d1d5db;
+        border: 1px solid #2c3138;
+        border-radius: 10px;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #2c3138;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #2c3138;
+    }
+
+    .modal-title {
+        color: #4fd8ff;
+        font-weight: 600;
+        font-family: 'Montserrat', sans-serif;
+    }
+
+    /* Back Link */
+    .back-link a {
+        color: #4fd8ff;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+    /* Responsive adjustments */
+    
+</style>

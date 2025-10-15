@@ -1,0 +1,51 @@
+﻿@page "{dokumentId:guid?}"
+@model DmsProjeckt.Pages.Dokument.VersionenModel
+@{
+    ViewData["Title"] = "📂 Dokument-Versionen";
+}
+
+<!-- 🗂️ Titelbereich -->
+<h2 class="text-light mb-4">📂 Historie der Dokumentversionen</h2>
+
+<!-- 📋 Tabelle mit allen gespeicherten Versionen eines Dokuments -->
+<table class="table table-dark table-striped table-bordered">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Dateiname</th>
+            <th>Pfad</th>
+            <th>Version</th>
+            <th>Hochgeladen am</th>
+            <th>Benutzer</th>
+            <th>📥 Télécharger</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.DokumentVersionen.Any())
+        {
+            foreach (var version in Model.DokumentVersionen)
+            {
+                <tr>
+                    <td>@version.Id</td>
+                    <td>@version.Dateiname</td>
+                    <td class="text-truncate" style="max-width: 300px;">@version.Dateipfad</td>
+                    <td>@version.VersionsLabel</td>
+                    <td>@version.HochgeladenAm.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>@version.ApplicationUser?.Email</td> <!-- 👤 Benutzeranzeige -->
+                    <td>
+                        <a href="@version.Dateipfad" class="btn btn-sm btn-outline-primary" target="_blank">📥</a>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    Keine Versionen verfügbar für dieses Dokument.
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

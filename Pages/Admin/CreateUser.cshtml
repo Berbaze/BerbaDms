@@ -1,0 +1,183 @@
+﻿@page
+@model DmsProjeckt.Pages.Admin.CreateUserModel
+
+<div class="create-user-bg">
+    <div class="create-user-card">
+        <h2 class="create-user-title">Neuen Benutzer erstellen</h2>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert-message alert-error">
+                @foreach (var modelError in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@modelError.ErrorMessage</div>
+                }
+            </div>
+        }
+        @if (Model.SuccessMessage != null)
+        {
+            <div class="alert-message alert-success">@Model.SuccessMessage</div>
+        }
+
+        <form method="post" autocomplete="off">
+            <div class="form-row">
+                <label>Vorname</label>
+                <input type="text" name="Vorname" required value="@Model.Vorname" />
+            </div>
+            <div class="form-row">
+                <label>Nachname</label>
+                <input type="text" name="Nachname" required value="@Model.Nachname" />
+            </div>
+            <div class="form-row">
+                <label>Firmenname</label>
+                <input type="text" name="FirmenName" required value="@Model.FirmenName" />
+            </div>
+            <div class="form-row">
+                <label>E-Mail-Adresse</label>
+                <input type="email" name="Email" required value="@Model.Email" />
+            </div>
+            <div class="form-row">
+                <label>Abteilung</label>
+                <select name="AbteilungId" required>
+                    <option value="">-- Abteilung wählen --</option>
+                    @foreach (var abt in Model.Abteilungen)
+                    {
+                        <option value="@abt.Id" selected="@(abt.Id == Model.AbteilungId)">
+                            @abt.Name
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="form-row">
+                <label>Passwort</label>
+                <input type="password" name="Password" required autocomplete="new-password" />
+            </div>
+            <div class="form-row">
+                <label>Rolle</label>
+                <select name="SelectedRole" required>
+                    <option value="Viewer" selected="@("Viewer" == Model.SelectedRole)">Viewer</option>
+                    <option value="Editor" selected="@("Editor" == Model.SelectedRole)">Editor</option>
+                    <option value="Admin" selected="@("Admin" == Model.SelectedRole)">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-gold">Benutzer erstellen</button>
+        </form>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .create-user-bg {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #23272e 0%, #181b1f 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .create-user-card {
+            background: rgba(30,32,38,0.99);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 #00000040, 0 1.5px 6px #22262b7a;
+            padding: 2.8rem 2.2rem 2.4rem 2.2rem;
+            max-width: 420px;
+            width: 100%;
+            margin: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.3rem;
+        }
+
+        .create-user-title {
+            color: #ffce48;
+            font-size: 2.0rem;
+            text-align: center;
+            font-family: 'Segoe UI Semibold', Arial, sans-serif;
+            margin-bottom: 0.8rem;
+            letter-spacing: 0.04em;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-bottom: 1.09rem;
+        }
+
+            .form-row label {
+                color: #ffce48;
+                font-weight: 500;
+                font-size: 1.07em;
+                margin-bottom: 0.2em;
+                letter-spacing: 0.01em;
+            }
+
+            .form-row input,
+            .form-row select {
+                background: #23262e;
+                border: 1.5px solid #ffce48b2;
+                border-radius: 9px;
+                color: #ffecb3;
+                font-size: 1.08em;
+                padding: 0.65em 1.1em;
+                outline: none;
+                box-shadow: 0 2px 8px #ffd70019;
+                font-family: inherit;
+                transition: border .18s, box-shadow .14s;
+            }
+
+                .form-row input:focus,
+                .form-row select:focus {
+                    border: 1.5px solid #fff3b0;
+                    box-shadow: 0 0 0 2px #ffeb8a54;
+                }
+
+        .btn-gold {
+            background: linear-gradient(90deg, #ffce48 40%, #fff5c0 120%);
+            color: #2d2c20;
+            border-radius: 13px;
+            font-weight: 700;
+            font-size: 1.13em;
+            box-shadow: 0 2px 12px #ffe48c53;
+            border: 1.5px solid #ffe8a2;
+            padding: 0.8em 1.5em;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 0.3em;
+            transition: background .16s, color .16s;
+        }
+
+            .btn-gold:hover,
+            .btn-gold:focus {
+                background: linear-gradient(90deg, #fff3b0 10%, #ffce48 100%);
+                color: #18170e;
+            }
+
+        .alert-message {
+            border-radius: 9px;
+            padding: 1em 1.1em;
+            font-weight: 500;
+            margin-bottom: 0.8em;
+            text-align: left;
+            font-size: 1.05em;
+        }
+
+        .alert-error {
+            background: linear-gradient(90deg,#e97050 60%,#ffce4860 100%);
+            color: #fff2e0;
+            border: 1.5px solid #f8b46a;
+        }
+
+        .alert-success {
+            background: linear-gradient(90deg, #2d2e33 60%, #ffecb3 100%);
+            color: #ffce48;
+            border: 1.5px solid #ffe7a1;
+        }
+
+        @@media (max-width: 600px) {
+            .create-user-card {
+                padding: 1.2rem 0.7rem;
+            }
+        }
+    </style>
+}

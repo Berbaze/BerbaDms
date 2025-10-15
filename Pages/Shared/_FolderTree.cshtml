@@ -1,0 +1,218 @@
+﻿@model DmsProjeckt.Data.DmsFolder
+
+@{
+    // 🌈 Déterminer l’icône et couleur du dossier
+    string iconClass = Model.IsAbteilung ? "fas fa-building" :
+                       Model.Name.Equals("Archiv", StringComparison.OrdinalIgnoreCase) ? "fas fa-archive" :
+                       Model.Name.Equals("Versionen", StringComparison.OrdinalIgnoreCase) ? "bi bi-layers" :
+                       "bi bi-folder-fill";
+
+    string iconColor = Model.IsAbteilung ? "text-info" :
+                       Model.Name.Equals("Archiv", StringComparison.OrdinalIgnoreCase) ? "text-warning" :
+                       Model.Name.Equals("Versionen", StringComparison.OrdinalIgnoreCase) ? "text-info" :
+                       "text-warning";
+
+    int fileCount = (Model.Files?.Count(f => f.Name != ".init") ?? 0)
+        + (Model.SubFolders?.Sum(sf => sf.Files?.Count(f => f.Name != ".init") ?? 0) ?? 0);
+
+    string firebasePath = Model.Path ?? "";
+}
+
+<!-- ✅ Correction principale : ajout de data-abteilung et data-kategorie -->
+<li class="modern-folder-item"
+    data-folder
+    @(Model.IsAbteilung
+        ? $"data-abteilung='{Model.Name.ToLower()}'"
+        : $"data-kategorie='{Model.Name.ToLower()}'")>
+
+    <!-- 🌟 Header du dossier -->
+    <div class="explorer-abteilung"
+         onclick="toggleFolderNode(this)"
+         oncontextmenu="openFolderContextMenu(event, '@Model.Path'); return false;">
+
+        <div class="explorer-abteilung-header">
+            <!-- 📁 Icône + Nom -->
+            <div class="explorer-abteilung-title">
+                <i class="@iconClass @iconColor"></i>
+                <span>@Model.Name</span>
+            </div>
+
+            <!-- 📊 Info & Actions -->
+            <div class="explorer-abteilung-info">
+                <span class="badge bg-secondary text-light">
+                    📄 @fileCount Datei@(fileCount != 1 ? "en" : "")
+                </span>
+
+                <button class="btn btn-sm btn-outline-warning"
+                        title="Nur Dokumente aus diesem Ordner zeigen"
+                        onclick="event.stopPropagation(); filterByFolder('@Model.Path')">
+                    <i class="bi bi-funnel"></i>
+                </button>
+
+                <button class="btn btn-sm btn-outline-light"
+                        title="Optionen"
+                        onclick="event.stopPropagation(); openFolderContextMenu(event, '@Model.Path'); return false;">
+                    <i class="bi bi-three-dots-vertical"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 📂 Path -->
+        <div class="explorer-path">
+            <small><i class="bi bi-link-45deg"></i> @firebasePath</small>
+        </div>
+    </div>
+
+    <!-- 🌍 Contenu du dossier -->
+    @if ((Model.Files?.Any(f => f.Name != ".init") ?? false) || (Model.SubFolders?.Any() == true))
+    {
+        <div class="folder-content ps-3" style="display:none;">
+            @if (Model.Files?.Any(f => f.Name != ".init") ?? false)
+            {
+                <div class="small text-info mb-2 mt-2">
+                    <i class="bi bi-folder2-open"></i> Enthaltene Dateien
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle rounded-2 shadow-sm">
+                        <tbody>
+                            @foreach (var file in Model.Files.Where(f => f.Name != ".init").OrderBy(f => f.Name))
+                            {
+                                @Html.Partial("Dokument/_DokumentTableRow", file)
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            @if (Model.SubFolders?.Any() == true)
+            {
+                <ul class="list-unstyled mt-2">
+                    @foreach (var sub in Model.SubFolders.OrderBy(f => f.Name))
+                    {
+                        @Html.Partial("_FolderTree", sub)
+                    }
+                </ul>
+            }
+        </div>
+    }
+</li>
+
+@section Style {
+        /* ⚡ Ultra Compact Explorer - haute densité maximale */
+
+        .explorer-abteilung {
+            background: #1a1b1d;
+            border: 1px solid #2b2c2f;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+            transition: background 0.1s ease-in-out;
+        }
+
+        .explorer-abteilung:hover {
+            background: #222326;
+        }
+
+        .explorer-abteilung-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .explorer-abteilung-title {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #ddd;
+        }
+
+        .explorer-abteilung-title i {
+            font-size: 0.85rem;
+        }
+
+        .explorer-abteilung-info {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .explorer-abteilung-info .badge {
+            font-size: 0.65rem;
+            padding: 1px 5px;
+            background: #2e3033;
+            border-radius: 4px;
+        }
+
+        .explorer-abteilung-info .btn {
+            padding: 0 4px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            line-height: 1;
+            transition: 0.1s;
+        }
+
+        .explorer-abteilung-info .btn:hover {
+            background-color: #34363a;
+        }
+
+        .explorer-path {
+            font-size: 0.65rem;
+            color: #777;
+            margin-left: 2px;
+            margin-top: 0;
+        }
+
+        .folder-content {
+            margin-top: 4px;
+            border-left: 1px dashed rgba(255, 255, 255, 0.05);
+            padding-left: 6px;
+        }
+
+        .folder-content .table {
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+            color: #cfd0d1;
+        }
+
+        .folder-content .table td {
+            padding: 3px 4px;
+        }
+
+        .small.text-info.mb-2.mt-2 {
+            font-size: 0.7rem !important;
+            color: #4fc3f7 !important;
+            margin: 2px 0 !important;
+        }
+
+        ul.list-unstyled.mt-2 {
+            margin-top: 2px !important;
+        }
+
+        /* 🌈 Scroll plus dense */
+        .explorer-container {
+            max-height: 85vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #34363a #1a1b1d;
+        }
+
+        .explorer-container::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .explorer-container::-webkit-scrollbar-thumb {
+            background: #34363a;
+            border-radius: 3px;
+        }
+
+        /* 🌟 Animation minimale */
+    @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-1px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+}

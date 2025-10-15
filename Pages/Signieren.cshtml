@@ -1,0 +1,45 @@
+﻿@page
+@model DmsProjeckt.Pages.SignierenModel
+@{
+}
+
+    <h2 class="text-xl font-bold mb-4" style="color:#4fd8ff;">✍️ Offene Signaturanfragen</h2>
+
+    @if (Model.PendingRequests == null || !Model.PendingRequests.Any())
+    {
+        <div class="notif-item">
+            Keine offenen Signaturanfragen.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-dark table-striped" style="background:#1b2029; border-radius:12px; overflow:hidden;">
+                <thead style="background:#161d23; color:#4fd8ff;">
+                    <tr>
+                        <th>Dokument</th>
+                        <th>Angefragt von</th>
+                        <th>Am</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.PendingRequests)
+                    {
+                        <tr style="border-color:#232c37;">
+                            <td>@item.DokumentName</td>
+                            <td>@item.RequestedByName</td>
+                            <td>@item.RequestedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                            <a class="btn btn-sm"
+                               style="background:#263241; color:#4fd8ff; border-radius:8px;"
+                               href="/Pdf/EditOne?FileName=@Uri.EscapeDataString(item.ObjectPath)">
+                                Öffnen & Unterschreiben
+                            </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }

@@ -1,0 +1,41 @@
+﻿@model DmsProjeckt.Pages.Workflows.StepUploadModel
+@{
+    var fieldName = ViewData["FieldName"]?.ToString();
+    var value = Model.GetType().GetProperty(fieldName)?.GetValue(Model)?.ToString();
+    var labelText = fieldName switch
+    {
+        "Email" => "📧 E-Mail",
+        "Telefon" => "📞 Telefon",
+        "Website" => "🌐 Website",
+        "Bankverbindung" => "🏦 Bankverbindung",
+        "IBAN" => "💳 IBAN",
+        "BIC" => "🏷️ BIC",
+        "UIDNummer" => "🧾 UID",
+        "Adresse" => "📍 Adresse",
+        "AnsprechPartner" => "👤 Ansprechpartner",
+        "Zahlungsbedingungen" => "📑 Zahlungsbedingungen",
+        "Faelligkeitsdatum" => "📆 Fälligkeitsdatum",
+        "ArtikelAnzahl" => "🔢 Artikelanzahl",
+        "AbsenderAdresse" => "📬 Absender Adresse",
+        "Zeitraum" => "📆 Zeitraum",
+        "Lieferart" => "📦 Lieferart",
+        "Nettobetrag" => "💸 Nettobetrag (€)",
+        "Steuerbetrag" => "🧾 Steuerbetrag (€)",
+        "Gesamtpreis" => "💰 Gesamtpreis (€)",
+        "Rechnungsnummer" => "📄 Rechnungsnummer",
+        "Rechnungsdatum" => "📅 Rechnungsdatum",
+        "Lieferdatum" => "🚚 Lieferdatum",
+        _ => fieldName
+    };
+}
+
+@if (!string.IsNullOrWhiteSpace(fieldName))
+{
+    <div class="metadata-item">
+        <label class="form-label" for="@fieldName">@labelText</label>
+        <textarea id="@fieldName"
+                  name="@fieldName"
+                  class="form-control metadata-input-full autosize-textarea"
+                  rows="1">@value</textarea>
+    </div>
+}

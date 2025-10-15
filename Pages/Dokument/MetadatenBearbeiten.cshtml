@@ -1,0 +1,383 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.MetadatenBearbeitenModel
+@{
+    ViewData["Title"] = "Metadaten bearbeiten";
+}
+
+<h2 class="mb-4"> ✏️ Metadaten bearbeiten</h2>
+
+<form method="post" class="p-4 rounded bg-dark text-light shadow-lg">
+    <input type="hidden" asp-for="Dokument.Id" />
+    <!-- 👇 wichtig: HiddenField für Übergabe der Signaturen -->
+    <input type="hidden" id="PendingSignaturesJson" name="PendingSignaturesJson" />
+
+    <!-- SECTION 1 : Felder mit Wert -->
+    <div class="mb-3">
+        <h4 class="border-bottom pb-2 text-success">✔ Hauptinformationen</h4>
+    </div>
+    <div class="row g-3">
+
+        @if (!string.IsNullOrEmpty(Model.Dokument.Kategorie))
+        {
+
+            <div class="col-md-4">
+                <label class="form-label">Kategorie</label>
+                <select asp-for="Dokument.Kategorie" class="form-select">
+                    <option value="rechnungen">Rechnungen</option>
+                    <option value="gutschriften">Gutschriften</option>
+                    <option value="angebote">Angebote</option>
+                    <option value="bestellungen">Bestellungen</option>
+                    <option value="lieferscheine">Lieferscheine</option>
+                    <option value="verträge">Verträge</option>
+                    <option value="gebühren">Gebühren</option>
+                    <option value="korrespondenz">Korrespondenz</option>
+                    <option value="berichte">Berichte</option>
+                    <option value="protokolle">Protokolle</option>
+                    <option value="schulungsunterlagen">Schulungsunterlagen</option>
+                    <option value="projektunterlagen">Projektunterlagen</option>
+                    <option value="genehmigungen">Genehmigungen</option>
+                    <option value="zertifikate">Zertifikate</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="technische_zeichnungen">Technische Zeichnungen</option>
+                    <option value="handbücher">Handbücher</option>
+                    <option value="rechtliche_dokumente">Rechtliche Dokumente</option>
+                    <option value="steuerunterlagen">Steuerunterlagen</option>
+                    <option value="unbekannt">Unbekannt</option>
+                </select>
+            </div>
+        }
+        <input type="hidden" id="PendingSignaturesJson" name="PendingSignaturesJson" />
+
+
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Titel))
+        {
+            <div class="col-md-4"><label class="form-label">Titel</label><input asp-for="Metadaten.Titel" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Beschreibung))
+        {
+            <div class="col-md-4"><label class="form-label">Beschreibung</label><input asp-for="Metadaten.Beschreibung" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Rechnungsnummer))
+        {
+            <div class="col-md-4"><label class="form-label">Rechnungsnummer</label><input asp-for="Metadaten.Rechnungsnummer" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Kundennummer))
+        {
+            <div class="col-md-4"><label class="form-label">Kundennummer</label><input asp-for="Metadaten.Kundennummer" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Rechnungsbetrag.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Rechnungsbetrag</label><input asp-for="Metadaten.Rechnungsbetrag" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Nettobetrag.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Nettobetrag</label><input asp-for="Metadaten.Nettobetrag" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Gesamtpreis.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Gesamtpreis</label><input asp-for="Metadaten.Gesamtpreis" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Steuerbetrag.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Steuerbetrag</label><input asp-for="Metadaten.Steuerbetrag" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Rechnungsdatum.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Rechnungsdatum</label><input type="date" asp-for="Metadaten.Rechnungsdatum" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Lieferdatum.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Lieferdatum</label><input type="date" asp-for="Metadaten.Lieferdatum" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.Faelligkeitsdatum.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Fälligkeitsdatum</label><input type="date" asp-for="Metadaten.Faelligkeitsdatum" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Zahlungsbedingungen))
+        {
+            <div class="col-md-4"><label class="form-label">Zahlungsbedingungen</label><input asp-for="Metadaten.Zahlungsbedingungen" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Lieferart))
+        {
+            <div class="col-md-4"><label class="form-label">Lieferart</label><input asp-for="Metadaten.Lieferart" class="form-control" /></div>
+        }
+        @if (Model.Metadaten.ArtikelAnzahl.HasValue)
+        {
+            <div class="col-md-4"><label class="form-label">Artikelanzahl</label><input asp-for="Metadaten.ArtikelAnzahl" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Email))
+        {
+            <div class="col-md-4"><label class="form-label">E-Mail</label><input asp-for="Metadaten.Email" type="email" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Telefon))
+        {
+            <div class="col-md-4"><label class="form-label">Telefon</label><input asp-for="Metadaten.Telefon" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Telefax))
+        {
+            <div class="col-md-4"><label class="form-label">Telefax</label><input asp-for="Metadaten.Telefax" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.IBAN))
+        {
+            <div class="col-md-4"><label class="form-label">IBAN</label><input asp-for="Metadaten.IBAN" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.BIC))
+        {
+            <div class="col-md-4"><label class="form-label">BIC</label><input asp-for="Metadaten.BIC" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Bankverbindung))
+        {
+            <div class="col-md-4"><label class="form-label">Bankverbindung</label><input asp-for="Metadaten.Bankverbindung" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.SteuerNr))
+        {
+            <div class="col-md-4"><label class="form-label">Steuer-Nr</label><input asp-for="Metadaten.SteuerNr" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.UIDNummer))
+        {
+            <div class="col-md-4"><label class="form-label">UID-Nummer</label><input asp-for="Metadaten.UIDNummer" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Adresse))
+        {
+            <div class="col-md-4"><label class="form-label">Adresse</label><input asp-for="Metadaten.Adresse" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.AbsenderAdresse))
+        {
+            <div class="col-md-4"><label class="form-label">Absenderadresse</label><input asp-for="Metadaten.AbsenderAdresse" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.AnsprechPartner))
+        {
+            <div class="col-md-4"><label class="form-label">Ansprechpartner</label><input asp-for="Metadaten.AnsprechPartner" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Zeitraum))
+        {
+            <div class="col-md-4"><label class="form-label">Zeitraum</label><input asp-for="Metadaten.Zeitraum" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.PdfAutor))
+        {
+            <div class="col-md-4"><label class="form-label">PDF-Autor</label><input asp-for="Metadaten.PdfAutor" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.PdfBetreff))
+        {
+            <div class="col-md-4"><label class="form-label">PDF-Betreff</label><input asp-for="Metadaten.PdfBetreff" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.PdfSchluesselwoerter))
+        {
+            <div class="col-md-4"><label class="form-label">PDF-Schlüsselwörter</label><input asp-for="Metadaten.PdfSchluesselwoerter" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.Website))
+        {
+            <div class="col-md-6"><label class="form-label">Website</label><input asp-for="Metadaten.Website" class="form-control" /></div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Metadaten.OCRText))
+        {
+            <div class="col-md-6"><label class="form-label">OCR-Text</label><textarea asp-for="Metadaten.OCRText" class="form-control" rows="4"></textarea></div>
+        }
+    </div>
+
+    <!-- SECTION 2 : zusätzliche Felder -->
+    <div class="mt-5 bg-secondary p-3 rounded">
+        <button type="button" class="toggle-meta btn btn-warning w-100 text-start">
+            📂 Mehr Metadaten anzeigen
+        </button>
+        <div class="meta-section mt-3">
+            <div class="row g-3 mt-2">
+                @if (string.IsNullOrEmpty(Model.Metadaten.Kategorie))
+                {
+                    <div class="col-md-4"><label class="form-label">Kategorie</label><input asp-for="Metadaten.Kategorie" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Titel))
+                {
+                    <div class="col-md-4"><label class="form-label">Titel</label><input asp-for="Metadaten.Titel" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Beschreibung))
+                {
+                    <div class="col-md-4"><label class="form-label">Beschreibung</label><input asp-for="Metadaten.Beschreibung" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Rechnungsnummer))
+                {
+                    <div class="col-md-4"><label class="form-label">Rechnungsnummer</label><input asp-for="Metadaten.Rechnungsnummer" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Kundennummer))
+                {
+                    <div class="col-md-4"><label class="form-label">Kundennummer</label><input asp-for="Metadaten.Kundennummer" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Rechnungsbetrag.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Rechnungsbetrag</label><input asp-for="Metadaten.Rechnungsbetrag" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Nettobetrag.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Nettobetrag</label><input asp-for="Metadaten.Nettobetrag" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Gesamtpreis.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Gesamtpreis</label><input asp-for="Metadaten.Gesamtpreis" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Steuerbetrag.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Steuerbetrag</label><input asp-for="Metadaten.Steuerbetrag" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Rechnungsdatum.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Rechnungsdatum</label><input type="date" asp-for="Metadaten.Rechnungsdatum" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Lieferdatum.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Lieferdatum</label><input type="date" asp-for="Metadaten.Lieferdatum" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.Faelligkeitsdatum.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Fälligkeitsdatum</label><input type="date" asp-for="Metadaten.Faelligkeitsdatum" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Zahlungsbedingungen))
+                {
+                    <div class="col-md-4"><label class="form-label">Zahlungsbedingungen</label><input asp-for="Metadaten.Zahlungsbedingungen" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Lieferart))
+                {
+                    <div class="col-md-4"><label class="form-label">Lieferart</label><input asp-for="Metadaten.Lieferart" class="form-control" /></div>
+                }
+                @if (!Model.Metadaten.ArtikelAnzahl.HasValue)
+                {
+                    <div class="col-md-4"><label class="form-label">Artikelanzahl</label><input asp-for="Metadaten.ArtikelAnzahl" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Email))
+                {
+                    <div class="col-md-4"><label class="form-label">E-Mail</label><input asp-for="Metadaten.Email" type="email" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Telefon))
+                {
+                    <div class="col-md-4"><label class="form-label">Telefon</label><input asp-for="Metadaten.Telefon" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Telefax))
+                {
+                    <div class="col-md-4"><label class="form-label">Telefax</label><input asp-for="Metadaten.Telefax" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.IBAN))
+                {
+                    <div class="col-md-4"><label class="form-label">IBAN</label><input asp-for="Metadaten.IBAN" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.BIC))
+                {
+                    <div class="col-md-4"><label class="form-label">BIC</label><input asp-for="Metadaten.BIC" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Bankverbindung))
+                {
+                    <div class="col-md-4"><label class="form-label">Bankverbindung</label><input asp-for="Metadaten.Bankverbindung" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.SteuerNr))
+                {
+                    <div class="col-md-4"><label class="form-label">Steuer-Nr</label><input asp-for="Metadaten.SteuerNr" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.UIDNummer))
+                {
+                    <div class="col-md-4"><label class="form-label">UID-Nummer</label><input asp-for="Metadaten.UIDNummer" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Adresse))
+                {
+                    <div class="col-md-4"><label class="form-label">Adresse</label><input asp-for="Metadaten.Adresse" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.AbsenderAdresse))
+                {
+                    <div class="col-md-4"><label class="form-label">Absenderadresse</label><input asp-for="Metadaten.AbsenderAdresse" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.AnsprechPartner))
+                {
+                    <div class="col-md-4"><label class="form-label">Ansprechpartner</label><input asp-for="Metadaten.AnsprechPartner" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Zeitraum))
+                {
+                    <div class="col-md-4"><label class="form-label">Zeitraum</label><input asp-for="Metadaten.Zeitraum" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.PdfAutor))
+                {
+                    <div class="col-md-4"><label class="form-label">PDF-Autor</label><input asp-for="Metadaten.PdfAutor" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.PdfBetreff))
+                {
+                    <div class="col-md-4"><label class="form-label">PDF-Betreff</label><input asp-for="Metadaten.PdfBetreff" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.PdfSchluesselwoerter))
+                {
+                    <div class="col-md-4"><label class="form-label">PDF-Schlüsselwörter</label><input asp-for="Metadaten.PdfSchluesselwoerter" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.Website))
+                {
+                    <div class="col-md-6"><label class="form-label">Website</label><input asp-for="Metadaten.Website" class="form-control" /></div>
+                }
+                @if (string.IsNullOrEmpty(Model.Metadaten.OCRText))
+                {
+                    <div class="col-md-6"><label class="form-label">OCR-Text</label><textarea asp-for="Metadaten.OCRText" class="form-control" rows="4"></textarea></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="mt-4 d-flex gap-3">
+        <button type="submit" class="btn btn-success btn-lg shadow">
+            💾 Metadaten & Signaturen speichern
+        </button>
+        <a asp-page="/Index" class="btn btn-secondary btn-lg shadow">
+            ↩️ Zurück
+        </a>
+    </div>
+</form>
+
+<style>
+    input.form-control, textarea.form-control {
+        transition: all 0.2s ease-in-out;
+    }
+
+        input.form-control:hover, textarea.form-control:hover {
+            background-color: #2c2c2c;
+            border-color: #ffc107;
+        }
+
+    .meta-section {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: max-height 0.4s ease, opacity 0.3s ease;
+    }
+
+        .meta-section.open {
+            max-height: 2000px;
+            opacity: 1;
+        }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const btn = document.querySelector(".toggle-meta");
+            const metaSection = document.querySelector(".meta-section");
+
+            btn.addEventListener("click", function () {
+                metaSection.classList.toggle("open");
+                btn.textContent = metaSection.classList.contains("open")
+                    ? "📂 Mehr Metadaten ausblenden"
+                    : "📂 Mehr Metadaten anzeigen";
+            });
+
+            // 👇 Signaturen aus sessionStorage übernehmen
+            const sigs = sessionStorage.getItem("pendingSignatures");
+            if (sigs) {
+                console.log("📥 Metadaten-Seite: Signatures gefunden in sessionStorage:", JSON.parse(sigs));
+                const hidden = document.getElementById("PendingSignaturesJson");
+                if (hidden) {
+                    hidden.value = sigs;
+                    console.log("✅ HiddenField gesetzt:", hidden.value.substring(0,100) + "...");
+                } else {
+                    console.error("❌ HiddenField PendingSignaturesJson nicht gefunden!");
+                }
+
+                // Wichtig: erst nach dem Setzen entfernen
+                sessionStorage.removeItem("pendingSignatures");
+            } else {
+                console.warn("⚠️ Keine Signaturen im sessionStorage gefunden (eventuell nicht gesetzt?).");
+            }
+        });
+    </script>
+}

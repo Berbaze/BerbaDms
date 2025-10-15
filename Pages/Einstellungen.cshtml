@@ -1,0 +1,1124 @@
+﻿@page
+@model EinstellungenModel
+@{
+    ViewData["Title"] = "Einstellungen";
+}
+
+<!DOCTYPE html>
+<html lang="de">
+<!-- ...head mit CSS wie oben... -->
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Einstellungen</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picocss/pico@1/css/pico.min.css" />
+    <style>
+        html, body {
+            color-scheme: dark;
+            background: #18191c;
+            color: #fff;
+            scroll-behavior:smooth;
+        }
+
+        main.container {
+            padding: 2rem 0;
+        }
+
+        section {
+            background: #22232a;
+            border-radius: 1.1rem;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 2.5rem 2rem 2rem 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        label, h2, h3, hgroup h2, hgroup h3 {
+            color: #fff !important;
+        }
+
+        input, select {
+            background: #22232a !important;
+            color: #fff !important;
+            border-color: #33343b !important;
+        }
+
+        nav {
+            margin-bottom: 2rem;
+            background: #18191c;
+        }
+
+        footer {
+            background: transparent;
+        }
+
+        /* Benachrichtigungen Struktur */
+        .notification-settings-section {
+            margin: 2.5rem 0 0 0;
+            padding: 0;
+        }
+
+        /* Typ-Zeile */
+        .noti-row {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            min-height: 48px;
+        }
+
+        .noti-info {
+            flex: 2;
+            min-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.12rem;
+        }
+
+        .noti-title {
+            font-weight: 600;
+            font-size: 1.07rem;
+            color: #fff;
+            line-height: 1.15;
+        }
+
+        .noti-desc {
+            color: #bbb;
+            font-size: 0.98rem;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        /* Kategorisierung */
+        .notification-category {
+            margin-top: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.1rem;
+            padding-left:2.5rem;
+        }
+
+        /* Switch-Gruppe */
+        .noti-switch-group {
+            min-width: 170px;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            gap: 2.5rem;
+            margin-top: 0.1rem;
+        }
+
+        /* Switch */
+        .switch-label {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+
+            .switch-label input[type="checkbox"] {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #383a40;
+            transition: background 0.2s;
+            border-radius: 18px;
+        }
+
+            .switch-slider:before {
+                position: absolute;
+                content: "";
+                height: 22px;
+                width: 22px;
+                left: 2px;
+                top: 2px;
+                background-color: #3A96EC;
+                border-radius: 50%;
+                transition: transform 0.2s;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.11);
+            }
+
+        .switch-label input[type="checkbox"]:checked + .switch-slider {
+            background-color: #2d8cff;
+        }
+
+            .switch-label input[type="checkbox"]:checked + .switch-slider:before {
+                transform: translateX(22px);
+                background: #30a4ff;
+            }
+
+        /* Legende */
+        .noti-header-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-bottom: 1.3rem;
+            margin-top: 2.2rem;
+        }
+
+            .noti-header-row .category-title {
+                flex: 1;
+                margin-bottom: 0.3rem;
+            }
+
+        .noti-switch-legend {
+            display: flex;
+            flex-direction: row;
+            gap: 2.2rem; /* >2.2rem für "Email" weiter rechts */
+            min-width: 170px;
+            justify-content: flex-end;
+            align-items: flex-end;
+            margin-right: 0.5rem;
+        }
+
+            .noti-switch-legend span {
+                width: 48px;
+                text-align: center;
+                color: #cccccc;
+                font-weight: 500;
+                font-size: 1.07rem;
+                letter-spacing: 0.02em;
+                margin-bottom: 0;
+                display: block;
+            }
+
+                .noti-switch-legend span:last-child {
+                    padding-left: 0.5rem;
+                }
+
+
+        .settings-header {
+            margin-top: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+            .settings-header h1 {
+                font-size: 2.6rem;
+                font-weight: bold;
+                margin-bottom: 1.6rem;
+                color: #fff;
+            }
+
+        .settings-nav {
+            display: flex;
+            gap: 2rem;
+            justify-content: flex-start;
+            align-items: center;
+        }
+
+            .settings-nav button {
+                background: transparent;
+                color: #fff;
+                border: 2px solid #444;
+                border-radius: 2rem;
+                padding: 0.45rem 1.4rem;
+                font-size: 1rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+                outline: none;
+            }
+
+                .settings-nav button:hover,
+                .settings-nav button:focus {
+                    background: #23242a;
+                    border-color: #2d8cff;
+                    color: #aee1ff;
+                    box-shadow: 0 1px 8px 0 rgba(45, 140, 255, 0.09);
+                }
+
+        .noti-row.with-warning-select {
+            align-items: center; /* Alles mittig ausrichten */
+            gap: 2.5rem;
+        }
+
+        
+
+        .noti-row.with-warning-select .warning-select-container {
+            margin-top: 0.6em;
+            margin-left: 1.5em; /* Einrückung */
+        }
+
+        .warning-select-container {
+            margin-left: 1.5em; /* Einrückung der ComboBox UND Label */
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            height: 40px;
+        }
+
+        .compact-label {
+            font-weight: normal;
+            font-size: .97em;
+            display: flex;
+            align-items: center;
+            gap: .5em;
+        }
+
+        .compact-select {
+            padding: 2px 10px !important;
+            font-size: .98em;
+            min-width: 150px; /* Mehr Platz, damit Text nicht abgeschnitten */
+            height: 32px;
+            background: #23242a;
+            color: #fff;
+            border: 1px solid #33343b;
+            border-radius: 8px;
+            outline: none;
+            margin-left: 0.7em;
+            box-shadow: none;
+        }
+
+            .compact-select option {
+                color: #fff;
+                background: #23242a;
+            }
+
+        .password-input-wrapper {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .styled-password-input {
+            width: 100%;
+            height: 44px;
+            padding: 0 2.5rem 0 0.8rem !important;
+            background: #22232a !important;
+            color: #fff !important;
+            border: 1.5px solid #33343b !important;
+            border-radius: 0.5rem !important;
+            font-size: 1.08rem;
+            transition: border 0.15s;
+            box-sizing: border-box;
+        }
+
+            .styled-password-input:focus {
+                border-color: #2d8cff !important;
+                outline: none;
+            }
+
+        .toggle-password-visibility {
+            background: transparent;
+            border: none;
+            color: #bbb;
+            position: absolute;
+            right: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            padding: 0;
+            height: 32px;
+            width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .toggle-password-visibility:active, .toggle-password-visibility:focus {
+                color: #30a4ff;
+                outline: none;
+            }
+
+        .profile-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            width: 100%;
+        }
+
+        .profile-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 2.8rem; /* Mehr Abstand zwischen Label und Feld! */
+            margin-bottom: 0.1rem;
+        }
+
+        .profile-label {
+            min-width: 170px; /* Einheitlich für alle Label */
+            max-width: 170px;
+            color: #fff;
+            font-size: 1.07rem;
+            font-weight: 600;
+            font-family: inherit;
+            text-align: left;
+            padding-left: 2.1rem; /* Mehr Einrückung */
+            letter-spacing: 0.01em;
+            margin-top: 0.55rem; /* Vertikal zentriert zu Feld */
+            display: block;
+        }
+
+        .profile-input {
+            flex: 1;
+            padding: 0.45rem 1.1rem;
+            font-size: 1.07rem;
+            color: #fff;
+            background: #22232a;
+            border: 1.5px solid #33343b;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            transition: border-color 0.16s;
+        }
+
+            .profile-input:focus {
+                border-color: #2d8cff !important;
+                outline: none;
+            }
+
+        .profile-label {
+            min-width: 170px;
+            max-width: 170px;
+            color: #fff;
+            font-size: 1.07rem;
+            font-weight: 600;
+            font-family: inherit;
+            text-align: left;
+            /* HIER angepasst: */
+            padding-left: 2.5rem; /* wie noti-row! */
+            letter-spacing: 0.01em;
+            margin-top: 0.55rem;
+            display: block;
+        }
+
+        .profile-row.profile-image-row {
+            align-items: center; /* Bild und File input vertikal mittig */
+        }
+
+        .profile-image-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 2.2rem;
+        }
+
+        .profile-image-preview {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 50%;
+            border: 1.5px solid #444;
+            background: #18191c;
+            margin-left: 1rem;
+        }
+        /* --- Modern Buttons --- */
+        .modern-btn {
+            background: linear-gradient(90deg, #2d8cff 70%, #30a4ff 100%);
+            color: #fff;
+            border: none;
+            border-radius: 0.8rem;
+            font-size: 1.09rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            padding: 0.65em 2.3em;
+            min-width: 130px;
+            box-shadow: 0 2px 12px rgba(45,140,255,0.09), 0 0.5px 0.5px rgba(48,164,255,0.07);
+            cursor: pointer;
+            transition: background 0.18s, box-shadow 0.18s, transform 0.14s;
+            outline: none;
+            margin-right: 0.7rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+            .modern-btn:hover, .modern-btn:focus {
+                background: linear-gradient(90deg, #30a4ff 60%, #5ad6ff 100%);
+                box-shadow: 0 4px 20px 2px rgba(45,160,255,0.17);
+                transform: translateY(-2px) scale(1.04);
+                color: #fff;
+            }
+
+            .modern-btn.secondary {
+                background: rgba(255,255,255,0.05);
+                color: #aee1ff;
+                border: 1.5px solid #2d8cff;
+                box-shadow: none;
+                transition: background 0.18s, color 0.15s, border-color 0.14s;
+            }
+
+                .modern-btn.secondary:hover, .modern-btn.secondary:focus {
+                    background: rgba(45,140,255,0.13);
+                    color: #fff;
+                    border-color: #30a4ff;
+                    box-shadow: 0 2px 14px 0 rgba(45,160,255,0.10);
+                }
+
+
+        html, body {
+            color-scheme: dark;
+            background-color: #191c24;
+            color: #d1d5db;
+            
+        }
+
+        label, h1, h2, h3, hgroup h2, hgroup h3 {
+            color: #d1d5db !important;
+        }
+
+        input, select, textarea {
+            background-color: #22232a !important;
+            color: #d1d5db !important;
+            border: 1px solid #2c313a !important;
+        }
+
+            input:focus, select:focus, textarea:focus {
+                border-color: #4fd8ff !important;
+            }
+
+        /* Switches */
+        .switch-slider:before {
+            background-color: #4fd8ff;
+        }
+
+        .switch-label input[type="checkbox"]:checked + .switch-slider {
+            background-color: #10e6ff;
+        }
+
+            .switch-label input[type="checkbox"]:checked + .switch-slider:before {
+                background-color: #11caf6;
+            }
+
+        /* Buttons */
+        .modern-btn {
+            background-color: #4fd8ff;
+            color: white;
+        }
+
+            .modern-btn:hover {
+                background-color: #10e6ff;
+            }
+
+            .modern-btn.secondary {
+                background-color: transparent;
+                color: #4fd8ff;
+                border: 1.5px solid #4fd8ff;
+            }
+
+                .modern-btn.secondary:hover {
+                    background-color: #263241;
+                    color: white;
+                }
+
+        /* Notification text */
+        .noti-title {
+            color: #d1d5db;
+        }
+
+        .noti-desc {
+            color: #9ca3af;
+        }
+
+        /* Profilbild */
+        .profile-image-preview {
+            border: 1.5px solid #2c313a;
+            background-color: #191c24;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- ...nav... -->
+    <div class="settings-header">
+        <h1>Einstellungen</h1>
+        <div class="settings-nav">
+            <button type="button" onclick="scrollToSection('theme')">Erscheinungsbild</button>
+           
+            <button type="button" onclick="scrollToSection('benachrichtigung')">Benachrichtigungen</button>
+            <button type="button" onclick="scrollToSection('profil')">Profil</button>
+        </div>
+    </div>
+    <main class="container">
+        <form method="post" class="grid" id="mainForm" style="gap:2rem;" enctype="multipart/form-data">
+            <section id="theme">
+                <hgroup>
+                    <h2>Theme</h2>
+                    <h3>Wähle deinen Modus</h3>
+                </hgroup>
+
+            </section>
+
+            <section id="benachrichtigung">
+                <hgroup>
+                    <h2>Benachrichtigungen</h2>
+                </hgroup>
+                @{
+                    var notifTypes = Model.Settings.NotificationTypes;
+                    var byName = new Func<string, dynamic>(key =>
+                    notifTypes.FirstOrDefault(n => n.Name == key || n.Id.ToString() == key)
+                    );
+                }
+
+                <div class="notification-settings-section">
+                    <div class="noti-header-row">
+                        <h2 class="category-title">Aufgaben</h2>
+                        <div class="noti-switch-legend">
+                            <span>In-App</span>
+                            <span>Email</span>
+                        </div>
+                    </div>
+                    <div class="notification-category">
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Aufgabe erstellt</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe für Sie erstellt wurde.</span>
+                            </div>
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[0].Enabled" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[1].Enabled" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            <input type="hidden" asp-for="Settings.NotificationTypes[0].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[1].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[0].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[1].Name" />
+                        </div>
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Aufgabe erledigt</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe von Ihnen erledigt wurde.</span>
+                            </div>
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[2].Enabled" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[3].Enabled" />
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            <input type="hidden" asp-for="Settings.NotificationTypes[2].Id"/>
+                            <input type="hidden" asp-for="Settings.NotificationTypes[3].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[2].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[3].Name" />
+                        </div>
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Aufgabe fällig</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe fällig ist.</span>
+                                <div class="warning-select-container">
+                                    <label for="aufgabeFaelligVorwarnung" class="compact-label">
+                                        <span>Benachrichtigen</span>
+                                        <select asp-for="Settings.TaskDueWarningMinutes" id="aufgabeFaelligVorwarnung" class="compact-select">
+                                            <option value="5">5 Minuten vorher</option>
+                                            <option value="15">15 Minuten vorher</option>
+                                            <option value="30">30 Minuten vorher</option>
+                                            <option value="60">1 Stunde vorher</option>
+                                            <option value="180">3 Stunden vorher</option>
+                                            <option value="1440">1 Tag vorher</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+
+                      
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[14].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[15].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                            </div>
+                            <!-- Hidden Inputs -->
+                            <input type="hidden" asp-for="Settings.NotificationTypes[14].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[15].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[14].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[15].Name" />
+                        </div>
+                    </div>
+                    <div class="noti-header-row">
+                        <h2 class="category-title">Workflow</h2>
+                    </div>
+                    
+                    <div class="notification-category">
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Workflowaufgabe erstellt</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe in einem Workflow für Sie erstellt wurde.</span>
+                            </div>
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[4].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[5].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                            </div>
+                            <!-- Hidden Inputs -->
+                            <input type="hidden" asp-for="Settings.NotificationTypes[4].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[5].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[4].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[5].Name" />
+                        </div>
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Workflowaufgabe erledigt</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe in Ihrem Workflow erledigt wurde.</span>
+                            </div>
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[6].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[7].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                            </div>
+                            <!-- Hidden Inputs -->
+                            <input type="hidden" asp-for="Settings.NotificationTypes[6].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[7].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[6].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[7].Name" />
+                        </div>
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Workflow abgeschlossen</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn ein Workflow von Ihnen abgeschlossen wurde.</span>
+                            </div>
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[8].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[9].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                            </div>
+                            <!-- Hidden Inputs -->
+                            <input type="hidden" asp-for="Settings.NotificationTypes[8].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[9].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[8].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[9].Name" />
+                        </div>
+                        <div class="noti-row">
+                            <div class="noti-info">
+                                <span class="noti-title">Workflowaufgabe fällig</span>
+                                <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Aufgabe in einem Workflow fällig ist.</span>
+                                <div class="warning-select-container" >
+                                    <label for="workflowFaelligVorwarnung" class="compact-label" >
+                                        <span>Benachrichtigen</span>
+                                        <select asp-for="Settings.WorkflowTaskDueWarningMinutes" id="workflowFaelligVorwarnung" class="compact-select">
+                                            <option value="5">5 Minuten vorher</option>
+                                            <option value="15">15 Minuten vorher</option>
+                                            <option value="30">30 Minuten vorher</option>
+                                            <option value="60">1 Stunde vorher</option>
+                                            <option value="180">3 Stunden vorher</option>
+                                            <option value="1440">1 Tag vorher</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="noti-switch-group">
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[16].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                                <label class="switch-label">
+                                    <input type="checkbox" asp-for="Settings.NotificationTypes[17].Enabled" />
+                                    <span class="switch-slider"></span>
+
+                                </label>
+                            </div>
+                            <!-- Hidden Inputs -->
+                            <input type="hidden" asp-for="Settings.NotificationTypes[16].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[17].Id" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[16].Name" />
+                            <input type="hidden" asp-for="Settings.NotificationTypes[17].Name" />
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="noti-header-row">
+                <h2 class="category-title">Sonstiges</h2>
+                </div>
+                <div class="notification-category">
+                    <div class="noti-row">
+                        <div class="noti-info">
+                            <span class="noti-title">Dokument geteilt</span>
+                            <span class="noti-desc">Erhalten Sie eine Nachricht, wenn ein Dokument mit Ihnen geteilt wurde wurde.</span>
+                        </div>
+                        <div class="noti-switch-group">
+                            <label class="switch-label">
+                                <input type="checkbox" asp-for="Settings.NotificationTypes[10].Enabled" />
+                                <span class="switch-slider"></span>
+
+                            </label>
+                            <label class="switch-label">
+                                <input type="checkbox" asp-for="Settings.NotificationTypes[11].Enabled" />
+                                <span class="switch-slider"></span>
+
+                            </label>
+                        </div>
+                        <!-- Hidden Inputs -->
+                        <input type="hidden" asp-for="Settings.NotificationTypes[10].Id" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[11].Id" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[10].Name" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[11].Name" />
+                    </div>
+                    <div class="noti-row">
+                        <div class="noti-info">
+                            <span class="noti-title">Notiz geteilt</span>
+                            <span class="noti-desc">Erhalten Sie eine Nachricht, wenn eine Notiz mit Ihnen geteilt wurde.</span>
+                        </div>
+                        <div class="noti-switch-group">
+                            <label class="switch-label">
+                                <input type="checkbox" asp-for="Settings.NotificationTypes[12].Enabled" />
+                                <span class="switch-slider"></span>
+
+                            </label>
+                            <label class="switch-label">
+                                <input type="checkbox" asp-for="Settings.NotificationTypes[13].Enabled" />
+                                <span class="switch-slider"></span>
+
+                            </label>
+                        </div>
+                        <!-- Hidden Inputs -->
+                        <input type="hidden" asp-for="Settings.NotificationTypes[12].Id" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[13].Id" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[12].Name" />
+                        <input type="hidden" asp-for="Settings.NotificationTypes[13].Name" />
+                    </div>
+                </div>
+            </section>
+            <section id="profil" style="background:#22232a; border-radius:1.1rem; box-shadow:0 2px 12px rgba(0,0,0,0.08); padding:2.5rem 2rem 2rem 2rem; margin-bottom:2.5rem; max-width:700px;">
+                <hgroup style="margin-bottom:2.2rem;">
+                    <h2 style="color:#fff;">Mein Konto</h2>
+                    <h3 style="color:#fff; font-weight:400;">Verwalte deine Kontodaten</h3>
+                </hgroup>
+                <div class="profile-row">
+                    <label class="profile-label">Profilbild</label>
+                    <div style="display:flex; flex-direction:row; align-items:center; gap:1.5rem;">
+                        <!-- Profilbild klickbar -->
+                        <div style="position:relative;">
+                            <img src="@Model.Settings.ProfilImageUrl"
+                                 alt="Profilbild"
+                                 id="profileImagePreview"
+                                 style="width:80px; height:80px; border-radius:50%; object-fit:cover; box-shadow:0 2px 8px #0006; cursor:pointer; border:2.2px solid #343642;" />
+
+                            <!-- Menü-Popup -->
+                            <div id="profilePicMenu"
+                                 style="display:none; position:absolute; top:88px; left:50%; transform:translateX(-50%); background:#282b32; border-radius:1.1rem; box-shadow:0 2px 8px #000a; min-width:130px; z-index:2; text-align:left;">
+                                <button type="button" id="changePicBtn" style="width:100%; padding:0.7em 1em; background:transparent; color:#fff; border:none; text-align:left; font-size:1.05em; cursor:pointer;">Bild ändern</button>
+                                <button type="button" id="deletePicBtn" style="width:100%; padding:0.7em 1em; background:transparent; color:#ff7878; border:none; text-align:left; font-size:1.05em; cursor:pointer;">Bild löschen</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="deleteProfileImage" name="Settings.DeleteProfileImage" value="false" />
+                        <!-- Unsichtbarer File-Input für Upload -->
+                        <input type="file" id="profileImageInput" name="ProfileImage" accept="image/*" style="display:none;" />
+                    </div>
+                </div>
+                <div class="profile-grid">
+                    <div class="profile-row">
+                        <label class="profile-label" for="firstName" style="align-self: flex-start;">Name</label>
+                        <div style="display: flex; gap: 1.3rem; width:100%;">
+                            <input asp-for="Settings.FirstName" id="firstName" class="profile-input" placeholder="Vorname" style="flex:1;" required />
+                            <input asp-for="Settings.LastName" id="lastName" class="profile-input" placeholder="Nachname" style="flex:1;" required />
+                        </div>
+                    </div>
+                    
+                    <div class="profile-row">
+                        <label for="email" class="profile-label">E-Mail</label>
+                        <input asp-for="Settings.Email" id="email" class="profile-input" placeholder="deine@email.de" required />
+                    </div>
+                    <div class="profile-row">
+                        <label for="phoneNumber" class="profile-label">Telefonnummer</label>
+                        <input asp-for="Settings.PhoneNumber" id="phoneNumber" class="profile-input" placeholder="+49..." />
+                    </div>
+                    <div class="profile-row">
+                        <label for="birthDate" class="profile-label">Geburtsdatum</label>
+                        <input asp-for="Settings.BirthDate" id="birthDate" type="date" class="profile-input" />
+                    </div>
+                    
+                    <div class="profile-row">
+                        <label class="profile-label">Passwort</label>
+                        <div style="display:flex; flex-direction:column; gap:0.4rem;">
+                            <div class="password-input-wrapper">
+                                <input asp-for="Settings.CurrentPassword" id="currentPassword" type="password"
+                                       class="profile-input styled-password-input"
+                                       placeholder="Aktuelles Passwort" autocomplete="current-password" />
+                                <button type="button" class="toggle-password-visibility" data-target="currentPassword" tabindex="-1" aria-label="Passwort anzeigen">
+                                    <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+                                         stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                        <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <button type="button" id="togglePasswordEdit" class="modern-btn" style="max-width:220px; margin-top:0.4rem;">Passwort ändern</button>
+                            <div id="new-password-fields" style="display:none; flex-direction:column; gap:0.4rem;">
+                                <div class="password-input-wrapper">
+                                    <input asp-for="Settings.NewPassword" id="newPassword" type="password" autocomplete="new-password"
+                                           class="profile-input styled-password-input" placeholder="Neues Passwort" />
+                                    <button type="button" class="toggle-password-visibility" data-target="newPassword" tabindex="-1" aria-label="Passwort anzeigen">
+                                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="password-input-wrapper">
+                                    <input asp-for="Settings.ConfirmPassword" id="confirmPassword" type="password" autocomplete="new-password"
+                                           class="profile-input styled-password-input" placeholder="Neues Passwort bestätigen" />
+                                    <button type="button" class="toggle-password-visibility" data-target="confirmPassword" tabindex="-1" aria-label="Passwort anzeigen">
+                                        <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div style="display:flex; gap:1rem; margin-top:0.4rem;">
+                                    <button type="button" id="savePasswordBtn" class="modern-btn" style="flex:1;">Speichern</button>
+                                    <button type="button" id="cancelPasswordEdit" class="modern-btn" style="flex:1;">Abbrechen</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span asp-validation-summary="All" style="color:#ff7f7f; margin-top:1rem; display:block;"></span>
+            </section>
+
+            
+
+
+           
+
+            <div style="display: flex; gap: 1.5rem; margin-top: 1rem;">
+                <button type="submit" class="modern-btn">Speichern</button>
+                <button type="button" id="customResetBtn" class="modern-btn secondary">Zurücksetzen</button>
+            </div>
+
+
+            @if (TempData["Success"] != null)
+            {
+                <div style="color:#7fffa0; margin-top:1rem;">
+                    @TempData["Success"]
+                </div>
+            }
+        </form>
+    </main>
+    <!-- ...Newsletter und Footer wie oben... -->
+</body>
+</html>
+<script>
+              function scrollToSection(id) {
+        const section = document.getElementById(id);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+</script>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+
+    <script>
+        // Passwortsichtbarkeit (wie gehabt)
+        document.querySelectorAll('.toggle-password-visibility').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const input = document.getElementById(this.dataset.target);
+                if (!input) return;
+                if (input.type === "password") {
+                    input.type = "text";
+                    this.querySelector('svg').style.stroke = '#30a4ff';
+                } else {
+                    input.type = "password";
+                    this.querySelector('svg').style.stroke = '';
+                }
+            });
+        });
+
+        // Umschalten Edit-Mode
+        const toggleBtn = document.getElementById('togglePasswordEdit');
+        const passwordFields = document.getElementById('new-password-fields');
+        const currentPwLabel = document.getElementById('currentPasswordLabel');
+        const savePwBtn = document.getElementById('savePasswordBtn');
+        const cancelBtn = document.getElementById('cancelPasswordEdit');
+                // Altes Passwort (Hash oder Maskierung) merken
+        
+        const currentPwInput = document.getElementById('currentPassword');
+                     let oldPasswordHash = currentPwInput.value;
+
+        toggleBtn.addEventListener('click', function () {
+            oldPasswordHash = currentPwInput.value;
+            passwordFields.style.display = 'flex';
+            toggleBtn.style.display = 'none';
+            currentPwInput.value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        });
+
+
+                        cancelBtn.addEventListener('click', function () {
+            passwordFields.style.display = 'none';
+            toggleBtn.style.display = '';
+            currentPwInput.value = oldPasswordHash || '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        });
+
+        // Nur Passwort speichern (per Fetch/AJAX)
+                savePwBtn.addEventListener('click', async function () {
+            const currentPw = document.getElementById('currentPassword').value;
+            const newPw = document.getElementById('newPassword').value;
+            const confPw = document.getElementById('confirmPassword').value;
+
+            if (!currentPw || currentPw.trim().length === 0) {
+                alert("Bitte geben Sie Ihr aktuelles Passwort ein.");
+                return;
+            }
+            if (newPw.length < 6) {
+                alert("Das neue Passwort muss mindestens 6 Zeichen haben.");
+                return;
+            }
+            if (newPw !== confPw) {
+                alert("Die neuen Passwörter stimmen nicht überein.");
+                return;
+            }
+            // Sende alle drei Felder via POST
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const resp = await fetch(window.location.pathname + "?handler=ChangePassword", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? {'RequestVerificationToken': token} : {})
+                },
+                body: JSON.stringify({
+                    CurrentPassword: currentPw,
+                    NewPassword: newPw,
+                    ConfirmPassword: confPw
+                })
+            });
+            if (resp.ok) {
+                alert("Passwort erfolgreich geändert.");
+                passwordFields.style.display = 'none';
+                toggleBtn.style.display = '';
+                // Felder leeren
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+            } else {
+                alert("Fehler beim Ändern des Passworts.");
+            }
+        });
+              const img = document.getElementById('profileImagePreview');
+        const menu = document.getElementById('profilePicMenu');
+        const fileInput = document.getElementById('profileImageInput');
+
+        img.onclick = function(e) {
+            e.stopPropagation();
+            menu.style.display = (menu.style.display === "none" || !menu.style.display) ? "block" : "none";
+        };
+
+        // Klick außerhalb schließt das Menü
+        document.addEventListener('click', () => { menu.style.display = "none"; });
+
+        // "Bild ändern" Button
+        document.getElementById('changePicBtn').onclick = function(e) {
+            e.stopPropagation();
+            menu.style.display = "none";
+            fileInput.click();
+        };
+
+        // "Bild löschen" Button
+        document.getElementById('deletePicBtn').onclick = function(e) {
+            e.stopPropagation();
+            menu.style.display = "none";
+            if (confirm("Profilbild wirklich löschen?")) {
+                // Hier: setze ein HiddenField oder setze Profilbild-URL auf leer.
+                // Beispiel:
+                fileInput.value = "";
+                // Wenn du ein Feld wie HiddenFor="Settings.DeleteProfileImage" hast:
+                // document.getElementById('deleteProfileImage').value = "true";
+                // Oder schicke via JS/AJAX einen Delete-Request
+                // Oder entferne das Bild im Backend, wenn ProfileImage == null UND DeleteProfileImage == true
+                document.getElementById('deleteProfileImage').value = "true";
+                // Zeige Default-Avatar direkt im Frontend
+                img.src = "/images/default-profile.png";
+            }
+        };
+                       console.log("RESET-JS WIRD GELADEN!");
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("RESET-JS IST IM DOM!");
+
+            var resetBtn = document.getElementById('customResetBtn');
+            if (!resetBtn) {
+                console.log("Button nicht gefunden!");
+                return;
+            }
+            resetBtn.addEventListener('click', function (e) {
+                console.log("RESET wird geklickt!");
+                e.preventDefault();
+
+                // IDs der Felder, die NICHT zurückgesetzt werden sollen (Profil & Passwort)
+                const excludeIds = [
+                    'firstName', 'lastName', 'email', 'phoneNumber', 'birthDate',
+                    'profileImageInput', 'currentPassword', 'newPassword', 'confirmPassword'
+                ];
+
+                const form = document.getElementById('mainForm');
+                const allFields = form.querySelectorAll('input, select, textarea');
+
+                allFields.forEach(field => {
+                    if (excludeIds.includes(field.id)) return; // Auslassen
+
+                    // Checkboxen/Radio
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = field.defaultChecked;
+                    }
+                    // File-Input
+                    else if (field.type === 'file') {
+                        field.value = '';
+                    }
+                    // Select
+                    else if (field.tagName === 'SELECT') {
+                        for (let i = 0; i < field.options.length; i++) {
+                            field.options[i].selected = field.options[i].defaultSelected;
+                        }
+                    }
+                    // Andere Typen
+                    else {
+                        field.value = field.defaultValue;
+                    }
+                });
+
+                // Optional: Validierung und Hinweise löschen
+                // document.querySelector('span[asp-validation-summary="All"]').innerText = "";
+            });
+        });
+    </script>
+
+
+
+}

@@ -1,0 +1,896 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.ScanDokumentModel
+@{
+    ViewData["Title"] = "Dokument scannen – DMS";
+    Layout = "_Layout";
+}
+@section Styles {
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #1e1e1e;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .main-area {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .camera-preview {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        video {
+            width: 100%;
+            max-width: 60%;
+            border: 4px solid #00bfff;
+            border-radius: 12px;
+            background-color: black;
+            object-fit: contain;
+        }
+
+        #preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+            #preview img {
+                width: 100%;
+                border: 3px solid #444;
+                border-radius: 12px;
+            }
+
+        .gallery-section {
+            text-align: center;
+        }
+
+        .gallery-thumbs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+            .gallery-thumbs .thumbnail {
+                width: 120px;
+                border: 2px solid #555;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: transform 0.2s, border-color 0.2s;
+            }
+
+                .gallery-thumbs .thumbnail:hover {
+                    transform: scale(1.05);
+                    border-color: #00bfff;
+                }
+
+        .form-section {
+            background-color: #2c2c2c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-label {
+            color: #9ecfff;
+            margin-bottom: 6px;
+            display: block;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            background-color: #1e1e1e;
+            color: white;
+            border: 1px solid #00bfff;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+        textarea {
+            min-height: 150px;
+            font-family: 'Fira Mono', monospace;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .col-md-3 {
+            flex: 0 0 calc(25% - 12px);
+        }
+
+        .col-md-6 {
+            flex: 0 0 calc(50% - 12px);
+        }
+
+        .col-md-12 {
+            flex: 0 0 100%;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            padding: 20px;
+            background: #222;
+            border-top: 1px solid #333;
+        }
+
+        button {
+            background-color: #00bfff;
+            border: none;
+            padding: 12px 20px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+            button:hover {
+                background-color: #009acd;
+            }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .manual-toggle {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+            .manual-toggle a {
+                color: #00bfff;
+                text-decoration: underline;
+                cursor: pointer;
+                font-size: 0.95rem;
+            }
+
+        @@media (max-width: 768px) {
+            video {
+                max-width: 100%; /* Pleine largeur sur mobile */
+            }
+        }
+
+        select {
+            max-width: 400px;
+        }
+
+        input, select, textarea {
+            background-color: #1e1e1e;
+            color: white;
+            border: 1px solid #00bfff;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+        }
+
+            select option {
+                background-color: #2c2c2c; /* fond lisible */
+                color: white; /* texte clair */
+                padding: 8px;
+            }
+
+
+    </style>
+}
+
+
+<h1>📄 Dokument mit Kamera scannen</h1>
+
+<div class="main-area">
+
+    <!-- Camera -->
+    <div class="camera-preview">
+        <video id="camera" autoplay playsinline></video>
+    </div>
+
+    <!-- Image Preview -->
+    <div id="preview"></div>
+
+    <!-- Scans Gallery -->
+    <div class="gallery-section">
+        <h2>📂 Scans</h2>
+        <div id="gallery" class="gallery-thumbs"></div>
+    </div>
+    <!-- Allgemein -->
+    <div class="col-md-3 field-container">
+        <label class="form-label">Dateiname</label>
+        <input type="text" id="filename" name="Dateiname" placeholder="z. B. rechnung_august.png" class="form-control" />
+    </div>
+    <!-- ✅ Cas Admin / SuperAdmin -->
+    @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+    {
+        <div class="form-section">
+            <label class="form-label">📌 Abteilung wählen</label>
+            <select id="AbteilungId" name="AbteilungId" class="form-control" required>
+                <option value="">-- Abteilung auswählen --</option>
+                @foreach (var abt in Model.Abteilungen)
+                {
+                    <option value="@abt.Id">@abt.Name</option>
+                }
+            </select>
+        </div>
+    }
+
+    <!-- ✅ Cas utilisateur normal -->
+    @if (!(User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+    {
+        <div class="form-section">
+            <label class="form-label">📌 Deine Abteilung</label>
+            <input type="text" value="@Model.Abteilungen.FirstOrDefault()?.Name" class="form-control" readonly />
+            <input type="hidden" id="AbteilungId" name="AbteilungId" value="@Model.UserAbteilungId" />
+        </div>
+    }
+
+
+    <!-- Metadata section (hidden by default) -->
+    <div id="metadataSection" class="form-section hidden">
+        <h3 style="text-align: center;">📑 Erkannte Metadaten</h3>
+        <div class="row">
+  
+     
+
+            <div class="col-md-3 field-container">
+                <label class="form-label">Titel</label>
+                <input type="text" id="ocrTitel" name="Titel" class="form-control" />
+            </div>
+            <div class="col-md-3 field-container">
+                <label class="form-label">Beschreibung</label>
+                <input type="text" id="ocrBeschreibung" name="Beschreibung" class="form-control" />
+            </div>
+
+            <!-- Rechnungsdaten -->
+            <div class="col-md-3 field-container"><label class="form-label">Rechnungsnummer</label><input type="text" id="ocrRechnungsnummer" name="Rechnungsnummer" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Kundennummer</label><input type="text" id="ocrKundennummer" name="Kundennummer" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Rechnungsbetrag</label><input type="text" id="ocrRechnungsbetrag" name="Rechnungsbetrag" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Nettobetrag</label><input type="text" id="ocrNettobetrag" name="Nettobetrag" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Gesamtpreis</label><input type="text" id="ocrGesamtpreis" name="Gesamtpreis" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Steuerbetrag</label><input type="text" id="ocrSteuerbetrag" name="Steuerbetrag" class="form-control" /></div>
+
+            <!-- Daten -->
+            <div class="col-md-3 field-container"><label class="form-label">Rechnungsdatum</label><input type="date" id="ocrRechnungsdatum" name="Rechnungsdatum" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Lieferdatum</label><input type="date" id="ocrLieferdatum" name="Lieferdatum" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Fälligkeitsdatum</label><input type="date" id="ocrFaelligkeitsdatum" name="Faelligkeitsdatum" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Zahlungsbedingungen</label><input type="text" id="ocrZahlungsbedingungen" name="Zahlungsbedingungen" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Lieferart</label><input type="text" id="ocrLieferart" name="Lieferart" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Artikelanzahl</label><input type="number" id="ocrArtikelAnzahl" name="Artikelanzahl" class="form-control" /></div>
+
+            <!-- Kontakt -->
+            <div class="col-md-3 field-container"><label class="form-label">Email</label><input type="email" id="ocrEmail" name="Email" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Telefon</label><input type="text" id="ocrTelefon" name="Telefon" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Telefax</label><input type="text" id="ocrTelefax" name="Telefax" class="form-control" /></div>
+
+            <!-- Bank -->
+            <div class="col-md-3 field-container"><label class="form-label">IBAN</label><input type="text" id="ocrIBAN" name="IBAN" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">BIC</label><input type="text" id="ocrBIC" name="BIC" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Bankverbindung</label><input type="text" id="ocrBankverbindung" name="Bankverbindung" class="form-control" /></div>
+
+            <!-- Steuer -->
+            <div class="col-md-3 field-container"><label class="form-label">SteuerNr</label><input type="text" id="ocrSteuerNr" name="SteuerNr" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">UIDNummer</label><input type="text" id="ocrUIDNummer" name="UIDNummer" class="form-control" /></div>
+
+            <!-- Adresse -->
+            <div class="col-md-6 field-container"><label class="form-label">Adresse</label><input type="text" id="ocrAdresse" name="Adresse" class="form-control" /></div>
+            <div class="col-md-6 field-container"><label class="form-label">AbsenderAdresse</label><input type="text" id="ocrAbsenderAdresse" name="AbsenderAdresse" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">AnsprechPartner</label><input type="text" id="ocrAnsprechPartner" name="AnsprechPartner" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Zeitraum</label><input type="text" id="ocrZeitraum" name="Zeitraum" class="form-control" /></div>
+
+            <!-- PDF Info -->
+            <div class="col-md-3 field-container"><label class="form-label">PDF-Autor</label><input type="text" id="ocrPdfAutor" name="PdfAutor" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">PDF-Betreff</label><input type="text" id="ocrPdfBetreff" name="PdfBetreff" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">PDF-Schlüsselwörter</label><input type="text" id="ocrPdfSchluesselwoerter" name="PdfSchluesselwoerter" class="form-control" /></div>
+            <div class="col-md-3 field-container"><label class="form-label">Website</label><input type="url" id="ocrWebsite" name="Website" class="form-control" /></div>
+
+            <!-- OCR Text -->
+            <div class="col-md-12 field-container">
+                <label class="form-label">OCR-Text</label>
+                <textarea id="ocrText" name="OcrText" class="form-control" style="min-height:150px; font-family:'Fira Mono','Consolas',monospace;"></textarea>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Lien pour afficher manuellement les metadaten -->
+    <div class="manual-toggle">
+        <a href="#" onclick="manualShowMetadata(event)">👁️ Metadaten Ansehen</a> |
+        <a href="#" onclick="hideMetadata(event)">❌ Maskieren</a>
+    </div>
+</div>
+<div id="progressBarContainer" class="hidden" style="margin-top: 12px; width: 100%; max-width: 400px;">
+    <div style="background: #333; border-radius: 8px; overflow: hidden;">
+        <div id="progressBar" style="width: 0%; height: 16px; background: #00bfff; transition: width 0.3s;"></div>
+    </div>
+    <p id="progressLabel" style="text-align: center; font-size: 0.9rem; margin-top: 6px;">Analyse läuft...</p>
+</div>
+
+
+<!-- Control buttons -->
+<div class="controls">
+    <button id="takePhoto">📷 Foto aufnehmen</button>
+    <button id="borderBtn" style="display:none;">📏 Border auswählen</button>
+    <button id="confirmScan" style="display:none;">📐 Scan bestätigen</button>
+    <button id="uploadPhoto" style="display:none;">⬆️ Bild hochladen</button>
+    <button id="analyzeBtn" style="display:none;">📑 Analysieren Metadaten</button>
+    <button id="savePdfBtn" style="display:none;">💾 PDF speichern</button>
+    <button id="uploadPdfBtn" style="display:none;">⬆️ PDF hochladen</button>
+</div>
+
+<canvas id="snapshot" style="display:none;"></canvas>
+
+@section Scripts {
+    <script src="https://docs.opencv.org/4.7.0/opencv.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        const video = document.getElementById('camera');
+        const canvas = document.getElementById('snapshot');
+        const preview = document.getElementById('preview');   // für aktuelles Bild
+        const gallery = document.getElementById('gallery');   // für Thumbnails
+
+        const takePhotoBtn = document.getElementById('takePhoto');
+        const borderBtn = document.getElementById('borderBtn');
+        const confirmScanBtn = document.getElementById('confirmScan');
+        const uploadBtn = document.getElementById('uploadPhoto');
+        const uploadPdfBtn = document.getElementById('uploadPdfBtn');
+        const savePdfBtn = document.getElementById('savePdfBtn');
+
+        let capturedImage = null;
+        let dragPoints = [];
+        let dragging = -1;
+        let allScans = [];       // alle Bilder speichern
+        let editingIndex = -1;   // welches Bild wird bearbeitet?
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment", aspectRatio: 4/3 }, audio: false
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                alert("⚠️ Kamera konnte nicht gestartet werden: " + err.message);
+            }
+        }
+
+        function distance(p1, p2) {
+            return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+        }
+
+        function drawOverlay(ctx) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            if (dragPoints.length === 4) {
+                ctx.strokeStyle = "lime";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(dragPoints[0].x, dragPoints[0].y);
+                for (let i = 1; i < dragPoints.length; i++) ctx.lineTo(dragPoints[i].x, dragPoints[i].y);
+                ctx.closePath();
+                ctx.stroke();
+
+                ctx.fillStyle = "red";
+                dragPoints.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 14, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+            }
+        }
+
+        function bindOverlayEvents(overlayNew) {
+            overlayNew.addEventListener("mousedown", (e) => {
+                const rect = overlayNew.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                dragPoints.forEach((p, i) => {
+                    if (Math.hypot(mx - p.x, my - p.y) < 20) dragging = i;
+                });
+            });
+            overlayNew.addEventListener("mousemove", (e) => {
+                if (dragging >= 0) {
+                    const rect = overlayNew.getBoundingClientRect();
+                    dragPoints[dragging].x = e.clientX - rect.left;
+                    dragPoints[dragging].y = e.clientY - rect.top;
+                    drawOverlay(overlayNew.getContext("2d"));
+                }
+            });
+            overlayNew.addEventListener("mouseup", () => { dragging = -1; });
+        }
+
+        // --- Galerie rendern (Sidebar) ---
+        function renderGallery() {
+            gallery.innerHTML = "";
+            allScans.forEach((img, i) => {
+                gallery.innerHTML += `
+                    <img src="${img}"
+                         class="thumbnail"
+                         onclick="editScan(${i})"/>
+                `;
+            });
+
+            if (allScans.length > 0) {
+                uploadPdfBtn.style.display = "inline-block";
+                savePdfBtn.style.display = "inline-block";
+                analyzeBtn.style.display = "inline-block";
+            }
+        }
+
+        // Foto aufnehmen
+        takePhotoBtn.addEventListener("click", () => {
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            capturedImage = canvas.toDataURL("image/png");
+
+            allScans.push(capturedImage);
+            renderGallery();
+        });
+
+        // --- Bild bearbeiten (Border auswählen) ---
+        window.editScan = function(index) {
+            editingIndex = index;
+            capturedImage = allScans[index];
+
+            preview.innerHTML = `
+                <div style="position: relative; display:inline-block; width:100%; max-width:1000px;">
+                    <img src="${capturedImage}" id="capturedPreview"
+                         style="width:100%; max-width:1000px; border:3px solid #444; border-radius:12px;" />
+                    <canvas id="overlay" style="position:absolute; top:0; left:0;"></canvas>
+                </div>
+            `;
+
+            const newImg = document.getElementById("capturedPreview");
+            const overlayNew = document.getElementById("overlay");
+
+            const rect = newImg.getBoundingClientRect();
+            overlayNew.width = rect.width;
+            overlayNew.height = rect.height;
+
+            dragPoints = [
+                {x: 40, y: 40},
+                {x: overlayNew.width - 40, y: 40},
+                {x: overlayNew.width - 40, y: overlayNew.height - 40},
+                {x: 40, y: overlayNew.height - 40}
+            ];
+
+            drawOverlay(overlayNew.getContext("2d"));
+            bindOverlayEvents(overlayNew);
+
+            confirmScanBtn.style.display = "inline-block";
+        }
+
+        // --- Scan bestätigen ---
+        confirmScanBtn.addEventListener("click", async () => {
+            if (!capturedImage || editingIndex === -1) return;
+
+            const img = document.getElementById("capturedPreview");
+            const overlayCanvas = document.getElementById("overlay");
+
+            const scaleX = img.naturalWidth / overlayCanvas.width;
+            const scaleY = img.naturalHeight / overlayCanvas.height;
+
+            let scaledPoints = dragPoints.map(p => ({
+                x: p.x * scaleX,
+                y: p.y * scaleY
+            }));
+
+            const straight = await extractAndStraightenDocument(capturedImage, scaledPoints);
+            const enhanced = await enhanceScanEffect(straight);
+
+            allScans[editingIndex] = enhanced;
+            editingIndex = -1;
+
+            renderGallery();
+            preview.innerHTML = `<img src="${enhanced}" style="max-width:100%; border:3px solid #00bfff; border-radius:12px;" />`;
+
+            confirmScanBtn.style.display = "none";
+              analyzeBtn.style.display = "inline-block";
+        });
+
+                // --- Upload einzelnes Bild ---
+        uploadPdfBtn.addEventListener("click", async () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            // 🔹 Construire le PDF à partir des scans
+            allScans.forEach((img, i) => {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(img, "PNG", 10, 10, 190, 0);
+            });
+
+            const pdfBlob = pdf.output("blob");
+
+            let filename = document.getElementById("filename").value.trim();
+            if (!filename) {
+                filename = `scan_${new Date().toISOString().replace(/[:.]/g, "-")}.pdf`;
+            }
+            if (!filename.toLowerCase().endsWith(".pdf")) {
+                filename += ".pdf";
+            }
+
+            // ✅ Créer formData
+            const formData = new FormData();
+            formData.append("file", pdfBlob, filename);
+            formData.append("category", ""); // ASP.NET Core exige toujours une valeur
+
+            // ✅ Ajouter TOUS les champs Metadata visibles
+            const fields = document.querySelectorAll("#metadataSection input, #metadataSection textarea");
+            fields.forEach(f => {
+                formData.append(f.name, f.value);
+            });
+
+            // ✅ Ajouter AbteilungId si l’admin a le select
+            const abtSelect = document.getElementById("AbteilungId");
+            if (abtSelect) {
+                const abtValue = abtSelect.value;
+                if (abtValue) {
+                    formData.append("AbteilungId", abtValue);
+                }
+            }
+
+            // 🔍 Debug : afficher tout ce qui part
+            for (let p of formData.entries()) {
+                console.log("➡️ FormData:", p[0], "=", p[1]);
+            }
+
+            try {
+                const res = await fetch("/api/upload/scan", {
+                    method: "POST",
+                    body: formData
+                });
+
+                // 🔹 Lire la réponse brute
+                const rawText = await res.text();
+                console.log("📥 RAW Upload Response:", rawText);
+
+                let json;
+                try {
+                    json = JSON.parse(rawText);
+                } catch (err) {
+                    throw new Error("❌ Antwort ist kein gültiges JSON → " + rawText);
+                }
+
+                if (res.ok && json.success) {
+                    alert("✅ PDF + Metadaten erfolgreich hochgeladen!");
+                    window.location.href = json.redirectUrl || "/Dokument/Index";
+                } else {
+                    alert("❌ Fehler beim PDF-Upload: " + (json?.message || res.statusText));
+                }
+            } catch (error) {
+                alert("❌ Netzwerkfehler: " + error.message);
+                console.error(error);
+            }
+        });
+
+
+        // --- PDF lokal speichern ---
+        savePdfBtn.addEventListener("click", () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            allScans.forEach((img, i) => {
+                if (i > 0) pdf.addPage();
+                pdf.addImage(img, "PNG", 10, 10, 190, 0);
+            });
+
+            pdf.save("scans.pdf");
+        });
+
+        // --- Perspektive korrigieren ---
+        async function extractAndStraightenDocument(imageData, points) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    let src = cv.imread(img);
+
+                    let pts = [...points];
+                    pts.sort((a, b) => a.y - b.y);
+                    let top = pts.slice(0, 2).sort((a, b) => a.x - b.x);
+                    let bottom = pts.slice(2, 4).sort((a, b) => a.x - b.x);
+                    let ordered = [top[0], top[1], bottom[1], bottom[0]];
+
+                    let width = Math.max(distance(ordered[0], ordered[1]), distance(ordered[2], ordered[3]));
+                    let height = Math.max(distance(ordered[0], ordered[3]), distance(ordered[1], ordered[2]));
+
+                    let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        ordered[0].x, ordered[0].y,
+                        ordered[1].x, ordered[1].y,
+                        ordered[2].x, ordered[2].y,
+                        ordered[3].x, ordered[3].y
+                    ]);
+
+                    let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                        0, 0,
+                        width, 0,
+                        width, height,
+                        0, height
+                    ]);
+
+                    let M = cv.getPerspectiveTransform(srcTri, dstTri);
+                    let dst = new cv.Mat();
+                    cv.warpPerspective(src, dst, M, new cv.Size(width, height));
+
+                    let outCanvas = document.createElement("canvas");
+                    cv.imshow(outCanvas, dst);
+                    resolve(outCanvas.toDataURL("image/png"));
+
+                    src.delete(); dst.delete(); srcTri.delete(); dstTri.delete(); M.delete();
+                };
+                img.src = imageData;
+            });
+        }
+
+        // --- Scan verbessern ---
+          async function enhanceScanEffect(imageData) {
+            return new Promise((resolve) => {
+                if (!imageData) {
+                    console.error("❌ Kein gültiges imageData übergeben!");
+                    resolve(null);
+                    return;
+                }
+
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        let src = cv.imread(img);
+                        if (!src || src.empty()) {
+                            console.error("❌ cv.imread(img) hat kein Bild zurückgegeben!");
+                            resolve(imageData);
+                            return;
+                        }
+
+                        let dst = new cv.Mat();
+                        let lab = new cv.Mat();
+
+                        try {
+                            cv.cvtColor(src, lab, cv.COLOR_RGBA2Lab);
+                        } catch (err) {
+                            console.error("❌ Fehler bei cvtColor:", err);
+                            resolve(imageData);
+                            return;
+                        }
+
+                        let labPlanes = new cv.MatVector();
+                        cv.split(lab, labPlanes);
+
+                        let clahe = new cv.CLAHE(2.0, new cv.Size(8, 8));
+                        clahe.apply(labPlanes.get(0), labPlanes.get(0));
+
+                        cv.merge(labPlanes, lab);
+                        cv.cvtColor(lab, dst, cv.COLOR_Lab2RGBA);
+
+                        let alpha = 1.3, beta = 25;
+                        let adjusted = new cv.Mat();
+                        dst.convertTo(adjusted, -1, alpha, beta);
+
+                        let kernel = cv.Mat.ones(3, 3, cv.CV_32F);
+                        kernel.data32F.set([
+                            0, -1, 0,
+                            -1, 5, -1,
+                            0, -1, 0
+                        ]);
+                        let sharpened = new cv.Mat();
+                        cv.filter2D(adjusted, sharpened, cv.CV_8U, kernel);
+
+                        let outCanvas = document.createElement("canvas");
+                        cv.imshow(outCanvas, sharpened);
+
+                        resolve(outCanvas.toDataURL("image/png"));
+
+                        // Cleanup
+                        src.delete(); dst.delete(); lab.delete();
+                        adjusted.delete(); sharpened.delete();
+                        labPlanes.delete(); clahe.delete(); kernel.delete();
+
+                    } catch (err) {
+                        console.error("Enhance-Fehler (OpenCV):", err);
+                        resolve(imageData);
+                    }
+                };
+
+                img.onerror = () => {
+                    console.error("❌ Fehler beim Laden des Bildes in enhanceScanEffect");
+                    resolve(imageData);
+                };
+
+                img.src = imageData;
+            });
+        }
+
+
+        cv['onRuntimeInitialized'] = () => {
+            startCamera();
+        };
+
+                const analyzeBtn = document.getElementById('analyzeBtn');
+
+              // --- Analysieren Metadaten ---
+        analyzeBtn.addEventListener("click", async () => {
+            if (allScans.length === 0) {
+                alert("⚠️ Kein Scan zum Analysieren gefunden!");
+                return;
+            }
+
+            const imageData = allScans[0];
+            const filename = document.getElementById("filename").value || `scan_${Date.now()}.png`;
+
+            const blob = await (await fetch(imageData)).blob();
+            const formData = new FormData();
+            formData.append("file", blob, filename);
+
+            // ✅ Afficher progress bar
+            const progressContainer = document.getElementById("progressBarContainer");
+            const progressBar = document.getElementById("progressBar");
+            const progressLabel = document.getElementById("progressLabel");
+
+            progressContainer.classList.remove("hidden");
+            progressBar.style.width = "0%";
+            progressLabel.textContent = "🔍 Analyse läuft...";
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 10;
+                    progressBar.style.width = progress + "%";
+                }
+            }, 300);
+
+            try {
+                const res = await fetch("/api/upload/scan-ocr", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const text = await res.text();
+                let json;
+
+                try {
+                    json = JSON.parse(text);
+                } catch {
+                    throw new Error("Réponse serveur invalide: " + text);
+                }
+
+                clearInterval(interval);
+
+                if (res.ok && json.success) {
+                    progressBar.style.width = "100%";
+                    progressLabel.textContent = "✅ Analyse abgeschlossen";
+
+                    alert("✅ Metadaten analysiert!");
+                    fillMetadataFields(json.metadata);
+                    showMetadataSection(); // ✅ Seulement si succès
+                } else {
+                    progressBar.style.width = "100%";
+                    progressLabel.textContent = "❌ Fehler bei Analyse";
+
+                    alert("❌ Fehler bei Analyse: " + (json?.message || res.statusText));
+                }
+
+            } catch (err) {
+                clearInterval(interval);
+                progressBar.style.width = "100%";
+                progressLabel.textContent = "❌ Netzwerkfehler";
+
+                console.error("Analyse-Fehler:", err);
+                alert("❌ Netzwerkfehler bei Analyse: " + err.message);
+            }
+
+            // ✅ Masquer progress bar après délai
+            setTimeout(() => {
+                progressContainer.classList.add("hidden");
+                progressBar.style.width = "0%";
+                progressLabel.textContent = "Analyse läuft...";
+            }, 2000);
+        });
+
+
+
+        // --- Hilfsfunktion: Felder füllen ---
+        function fillMetadataFields(metadata) {
+            if (!metadata) return;
+
+            const map = {
+                Titel: "ocrTitel",
+                Beschreibung: "ocrBeschreibung",
+                Kategorie: "ocrKategorie",
+                AbteilungName: "ocrAbteilungName",
+                Rechnungsnummer: "ocrRechnungsnummer",
+                Kundennummer: "ocrKundennummer",
+                Rechnungsbetrag: "ocrRechnungsbetrag",
+                Nettobetrag: "ocrNettobetrag",
+                Gesamtpreis: "ocrGesamtpreis",
+                Steuerbetrag: "ocrSteuerbetrag",
+                Rechnungsdatum: "ocrRechnungsdatum",
+                Lieferdatum: "ocrLieferdatum",
+                Faelligkeitsdatum: "ocrFaelligkeitsdatum",
+                Zahlungsbedingungen: "ocrZahlungsbedingungen",
+                Lieferart: "ocrLieferart",
+                ArtikelAnzahl: "ocrArtikelAnzahl",
+                Email: "ocrEmail",
+                Telefon: "ocrTelefon",
+                Telefax: "ocrTelefax",
+                IBAN: "ocrIBAN",
+                BIC: "ocrBIC",
+                Bankverbindung: "ocrBankverbindung",
+                SteuerNr: "ocrSteuerNr",
+                UIDNummer: "ocrUIDNummer",
+                Adresse: "ocrAdresse",
+                AbsenderAdresse: "ocrAbsenderAdresse",
+                AnsprechPartner: "ocrAnsprechPartner",
+                Zeitraum: "ocrZeitraum",
+                PdfAutor: "ocrPdfAutor",
+                PdfBetreff: "ocrPdfBetreff",
+                PdfSchluesselwoerter: "ocrPdfSchluesselwoerter",
+                Website: "ocrWebsite",
+                OCRText: "ocrText"
+            };
+
+            for (const key in map) {
+                if (metadata[key] !== undefined && document.getElementById(map[key])) {
+                    const el = document.getElementById(map[key]);
+                    if (el.tagName === "TEXTAREA") {
+                        el.value = metadata[key];
+                    } else {
+                        el.value = metadata[key];
+                    }
+                }
+            }
+        }
+              function showMetadataSection() {
+            const section = document.getElementById('metadataSection');
+            section.classList.remove('hidden');
+
+            // Masquer les champs vides
+            const fields = section.querySelectorAll('.form-control');
+            fields.forEach(field => {
+                const container = field.closest('.field-container');
+                if (!field.value || field.value.trim() === '') {
+                    container.classList.add('hidden');
+                } else {
+                    container.classList.remove('hidden');
+                }
+            });
+        }
+
+        function manualShowMetadata(event) {
+            event.preventDefault();
+            const section = document.getElementById('metadataSection');
+            section.classList.remove('hidden');
+
+            // Affiche tous les champs pour debug
+            const fields = section.querySelectorAll('.form-control');
+            fields.forEach(field => {
+                const container = field.closest('.field-container');
+                container.classList.remove('hidden');
+            });
+        }
+
+        function hideMetadata(event) {
+            event.preventDefault();
+            document.getElementById('metadataSection').classList.add('hidden');
+        }
+
+
+    </script>
+}

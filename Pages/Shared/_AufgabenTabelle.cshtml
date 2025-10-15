@@ -1,0 +1,294 @@
+﻿@using System.Security.Claims
+
+@model (List<DmsProjeckt.Data.Aufgaben> Aufgaben, bool IstVonMir)
+@{
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+
+<table class="table table-striped sortierbare-tabelle">
+    <thead>
+        <tr>
+            <th data-column="titel">Titel</th>
+            <th data-column="faellig">Fällig</th>
+            <th data-column="prio">Priorität</th>
+            <th data-column="von">@((Model.IstVonMir ? "Für" : "Von"))</th>
+            <th data-column="erledigt">Erledigt</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var aufgabe in Model.Aufgaben)
+        {
+            <tr class="aufgabe-zeile" style="cursor:pointer;" data-id="@aufgabe.Id">
+                <td>@aufgabe.Titel</td>
+                <td>@aufgabe.FaelligBis.ToString("yyyy-MM-dd")</td>
+                <td>@aufgabe.Prioritaet</td>
+                <td>
+                    @(Model.IstVonMir
+                        ? aufgabe.FuerUserNavigation?.Email
+                        : aufgabe.VonUserNavigation?.Email)
+                </td>
+                <td>
+                    @if (!aufgabe.Erledigt && aufgabe.FuerUser == currentUserId && aufgabe.Aktiv)
+                    {
+                        @if (aufgabe.StepId.HasValue)
+                        {
+                            <form method="post" asp-page-handler="Erledigt">
+                                <input type="hidden" name="stepId" value="@aufgabe.StepId" />
+                                <button type="button" class="btn btn-success erledigt-button" data-type="workflow">Erledigen</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post" asp-page-handler="Erledigt">
+                                <input type="hidden" name="id" value="@aufgabe.Id" />
+                                <button type="submit" class="btn btn-success">Erledigen</button>
+                            </form>
+                        }
+
+
+
+                    }
+                    else if (aufgabe.Erledigt)
+                    {
+                        <span class="text-success">✅</span>
+                    }
+                    else
+                    {
+                        <span class="text-danger">✖</span>
+                    }
+                </td>
+                <td>
+                    <button type="button"
+                            class="btn btn-info details-button"
+                            data-id="@aufgabe.Id"
+                            data-titel="@aufgabe.Titel"
+                            data-beschreibung="@aufgabe.Beschreibung"
+                            data-faellig="@aufgabe.FaelligBis.ToString("dd.MM.yyyy HH:mm")"
+                            data-prio="@aufgabe.Prioritaet"
+                            data-userrole="👤 Zugewiesen an"
+                            data-user="@aufgabe.UserId"
+                            data-dateien="@string.Join(";", aufgabe.Dateien.Select(d => $"{d.Id}|{d.Dateiname}|{d.Dateipfad}"))"
+                            data-bs-toggle="modal"
+                            data-bs-target="#detailsModal">
+                        Details
+                    </button>
+
+
+
+
+                </td>
+            </tr>
+           
+        }
+    </tbody>
+</table>
+
+
+
+
+
+<style>
+    th.asc::after {
+        content: " ↑";
+    }
+
+    th.desc::after {
+        content: " ↓";
+    }
+
+    table.sortierbare-tabelle {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+        table.sortierbare-tabelle th,
+        table.sortierbare-tabelle td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    tr.aufgabe-zeile:hover {
+        background-color: #f0f8ff;
+    }
+
+    tr.aufgabe-details td {
+        background-color: #f9f9f9;
+    }
+
+    tr.aufgabe-details {
+        display: none;
+    }
+
+        tr.aufgabe-details.show {
+            display: table-row;
+        }
+
+    th.asc::after {
+        content: " ↑";
+    }
+
+    th.desc::after {
+        content: " ↓";
+    }
+
+    table.sortierbare-tabelle {
+        background-color: #1e1f24;
+        color: #ffffff;
+    }
+
+        table.sortierbare-tabelle th {
+            background-color: #2a2b30;
+            color: #4fd8ff;
+        }
+
+        table.sortierbare-tabelle td {
+            background-color: #1e1f24;
+            color: #e3e6ea;
+        }
+
+        table.sortierbare-tabelle tr:nth-child(even) td {
+            background-color: #2a2b30;
+        }
+
+    .modal-content {
+        background: #1e1f24 !important;
+        color: #fff !important;
+    }
+
+</style>
+
+@section Scripts {
+    <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log("🚀 DOM geladen");
+
+                
+            document.querySelectorAll(".details-button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    document.getElementById("modal-titel").textContent = btn.dataset.titel;
+                    document.getElementById("modal-beschreibung").textContent = btn.dataset.beschreibung || "-";
+                    document.getElementById("modal-faellig").textContent = btn.dataset.faellig;
+                    document.getElementById("modal-prio").textContent = btn.dataset.prio;
+                    document.getElementById("modal-user").textContent = btn.dataset.user || "-";
+                });
+            });
+                document.getElementById("modal-dateien").innerHTML = "";
+        if (btn.dataset.dateien) {
+            const files = btn.dataset.dateien.split(";");
+            files.forEach(f => {
+                const [name, url] = f.split("|");
+                if (name && url) {
+                    const li = `<li>
+                        <a href="${url}" target="_blank" download="${name}" class="text-info text-decoration-none">📎 ${name}</a>
+                    </li>`;
+                    document.getElementById("modal-dateien").innerHTML += li;
+                }
+            });
+        } else {
+            document.getElementById("modal-dateien").innerHTML = "<em>Keine Dateien</em>";
+        }
+
+                // ✅ Erledigt-Button (AJAX-Submit)
+
+
+                // ✅ Tabellen-Sortierung
+                   document.querySelectorAll('table.sortierbare-tabelle').forEach(table => {
+            const headers = table.querySelectorAll('th[data-column]');
+            let currentSort = { column: null, asc: true };
+
+            headers.forEach(header => {
+                header.style.cursor = "pointer";
+                header.addEventListener("click", () => {
+                    const column = header.getAttribute("data-column");
+                    const asc = currentSort.column === column ? !currentSort.asc : true;
+                    currentSort = { column, asc };
+
+                    headers.forEach(h => h.classList.remove("asc", "desc"));
+                    header.classList.add(asc ? "asc" : "desc");
+
+                    const rows = Array.from(table.querySelector("tbody").rows);
+                    const filteredRows = rows.filter(r => !r.classList.contains("aufgabe-details"));
+                    const index = header.cellIndex;
+
+                    filteredRows.sort((a, b) => {
+                        const getText = row => row.cells[index].textContent.trim();
+                        let valA = getText(a), valB = getText(b);
+
+                        switch (column) {
+                            case "faellig":
+                                valA = new Date(valA || "1970-01-01");
+                                valB = new Date(valB || "1970-01-01");
+                                return asc ? valA - valB : valB - valA;
+                            case "prio":
+                                return asc ? parseInt(valA) - parseInt(valB) : parseInt(valB) - parseInt(valA);
+                            case "erledigt":
+                                valA = valA.includes("✅") ? 1 : 0;
+                                valB = valB.includes("✅") ? 1 : 0;
+                                return asc ? valA - valB : valB - valA;
+                            default:
+                                return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                        }
+                    });
+
+                    const tbody = table.querySelector("tbody");
+                    filteredRows.forEach(row => {
+                        const detailRow = row.nextElementSibling?.classList.contains("aufgabe-details")
+                            ? row.nextElementSibling
+                            : null;
+                        tbody.appendChild(row);
+                        if (detailRow) tbody.appendChild(detailRow);
+                    });
+                });
+            });
+        });
+            });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("🔥 JS läuft");
+
+            document.querySelectorAll('.erledigt-button').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const form = e.target.closest("form");
+                    const formData = new FormData(form);
+                    const url = window.location.pathname + "?handler=Erledigt";
+
+                    console.log("🧠 Sende an:", url);
+                    console.log("📦 Form-Daten:", [...formData.entries()]);
+
+                    try {
+                        const res = await fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest' // 👈 optional: zur Erkennung von AJAX
+                            }
+                        });
+
+                        if (res.ok) {
+                            form.closest("td").innerHTML = "<span class='text-success'>✅</span>";
+
+                            if (typeof toastr !== 'undefined') {
+                                toastr.success("Aufgabe erledigt!");
+                            } else {
+                                alert("✅ erledigt");
+                            }
+                        } else {
+                            const err = await res.text();
+                            console.error("❌ Fehler-Response:", err);
+                            toastr?.error("Fehler beim Speichern");
+                        }
+                    } catch (err) {
+                        console.error("❌ Netzwerkfehler:", err);
+                        toastr?.error("Netzwerkfehler");
+                    }
+                });
+            });
+        });
+               
+
+    </script>
+}
+

@@ -1,0 +1,19 @@
+﻿@model DmsProjeckt.Data.DmsFile
+
+<tr>
+    <td>@Model.Name</td>
+    <td>🏢 @(Model.AbteilungName ?? "Unbekannt")</td>
+    <td>@(string.IsNullOrWhiteSpace(Model.Kategorie) ? "Allgemein" : Model.Kategorie)</td>
+    <td>-</td> <!-- pas de Benutzer dans DmsFile -->
+    <td>@(Model.HochgeladenAm?.ToString("dd.MM.yy HH:mm") ?? "-")</td>
+    <td class="text-center">
+        <button class="btn btn-sm btn-dark" onclick="openPreview('@Model.Name','@Model.SasUrl','@Model.Id',@(Model.IsVersion.ToString().ToLower()))">
+            Vorschau
+        </button>
+    </td>
+    <td>
+        <span class="badge @(Model.Status == "Fertig" ? "bg-success" : "bg-warning")">
+            @Model.Status
+        </span>
+    </td>
+</tr>

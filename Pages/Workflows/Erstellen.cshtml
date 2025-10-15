@@ -1,0 +1,547 @@
+﻿@page
+@model DmsProjeckt.Pages.Workflows.ErstellenModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="back-link">
+    <a asp-page="/Workflows/Index">← Zurück zur Übersicht</a>
+</div>
+
+<h2>Neuen Workflow erstellen</h2>
+
+<form method="post" enctype="multipart/form-data">
+    <!-- Workflow Titel -->
+    <div class="form-group">
+        <label asp-for="Workflow.Title" class="form-label">Titel</label>
+        <input asp-for="Workflow.Title" class="form-control" />
+        <span asp-validation-for="Workflow.Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Dateien anhängen (optional)</label>
+        <input type="file" name="Dateien" class="form-control" multiple />
+    </div>
+
+    <hr />
+    <h4>Workflow-Schritte</h4>
+    <div id="steps-container"></div>
+
+    <button type="button" class="btn btn-outline-primary" onclick="openStepModal()">+ Schritt hinzufügen</button>
+    <hr />
+    <button type="submit" class="btn btn-success">Workflow speichern</button>
+</form>
+
+<!-- MODAL -->
+<div class="modal fade" id="stepModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Schritt hinzufügen</h5>
+                <button type="button" class="close" data-bs-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modal-step-category">Kategorie</label>
+                    <select id="modal-step-category" class="form-control" onchange="toggleCustomCategory(this.value)">
+                        <option value="" disabled selected hidden>-- Kategorie wählen --</option>
+                        <option value="Signieren">🖊️ Signieren</option>
+                        <option value="Genehmigen">✅ Genehmigen</option>
+                        <option value="Upload">📤 Datei hochladen</option>
+                        <option value="Lesebestätigung">👁️ Gelesen bestätigen</option>
+                        <option value="Kommentar">💬 Kommentar</option>
+                        <option value="custom">📋 Andere...</option>
+                    </select>
+                    <input type="text" id="modal-step-category-custom" class="form-control mt-2 d-none" placeholder="Eigene Kategorie eingeben..." />
+                </div>
+                <div class="form-group">
+                    <label>Beschreibung</label>
+                    <textarea id="modal-step-description" class="form-control"></textarea>
+                </div>
+                <div class="form-group position-relative">
+                    <label>Benutzer / Abteilung zuweisen</label>
+                    <input type="text" id="modal-step-search" class="form-control" placeholder="🔍 Benutzer oder Abteilung suchen..." autocomplete="off" />
+                    <div id="search-results" class="search-dropdown"></div>
+
+                    <!-- Hidden input für gewählten User -->
+                    <input type="hidden" id="modal-step-user" />
+                </div>
+
+
+
+
+                <div class="form-group">
+                    <label for="modal-step-due">Fälligkeitsdatum</label>
+                    <input type="datetime-local" id="modal-step-due" class="form-control" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-primary" onclick="saveStep()">Schritt speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let stepIndex = 0;
+
+        function toggleCustomCategory(val) {
+            const customBox = document.getElementById('modal-step-category-custom');
+            if(val === 'custom') {
+                customBox.classList.remove('d-none');
+                customBox.required = false;
+                customBox.focus();
+            } else {
+                customBox.classList.add('d-none');
+                customBox.required = false;
+                customBox.value = '';
+            }
+        }
+
+        function openStepModal() {
+
+            document.getElementById('modal-step-description').value = '';
+            document.getElementById('modal-step-user').selectedIndex = 0;
+            document.getElementById('modal-step-category').selectedIndex = 0;
+            document.getElementById('modal-step-category-custom').classList.add('d-none');
+            document.getElementById('modal-step-category-custom').value = '';
+            const allDueInputs = document.querySelectorAll('input[name^="Steps"][name$="DueDate"]');
+            let latest = new Date();
+
+            for (const input of allDueInputs) {
+                const val = input.value;
+                if (!val) continue;
+                const dt = new Date(val);
+                if (dt > latest) latest = dt;
+            }
+
+            latest.setMinutes(latest.getMinutes() + 1);
+            const pad = n => n.toString().padStart(2, '0');
+            const toLocalInputFormat = (date) =>
+                `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+            const dueInput = document.getElementById('modal-step-due');
+            dueInput.value = toLocalInputFormat(latest);
+            dueInput.min = dueInput.value;
+
+            const modal = new bootstrap.Modal(document.getElementById('stepModal'));
+            modal.show();
+        }
+
+               let editingStepIndex = null;
+
+        function saveStep() {
+            const desc = document.getElementById('modal-step-description').value;
+            const userId = document.getElementById('modal-step-user').value;
+            const userName = document.getElementById('modal-step-search').value;
+            const due = document.getElementById('modal-step-due').value;
+            let category = document.getElementById('modal-step-category').value;
+            
+            const container = document.getElementById('steps-container');
+            if(category === 'custom') {
+                category = document.getElementById('modal-step-category-custom').value.trim();
+                if(!category) {
+                    alert("Bitte benutzerdefinierte Kategorie eingeben.");
+                    return;
+                }
+            }
+
+                 if (!desc || !userId || !due || !category) {
+            alert("Bitte alle Felder ausfüllen.");
+            return;
+        }
+            if (editingStepIndex !== null) {
+                const block = document.querySelector(`.metadata-group[data-step-index="${editingStepIndex}"]`);
+                if (block) {
+                    block.querySelector(`input[name="Steps[${editingStepIndex}].UserId"]`).value = userId;
+                    block.querySelector(`input[name="Steps[${editingStepIndex}].DueDate"]`).value = due;
+                    block.querySelector(`input[name="Steps[${editingStepIndex}].Kategorie"]`).value = category;
+                    block.querySelector(`input[name="Steps[${editingStepIndex}].Description"]`).value = desc;
+
+                    // UI aktualisieren
+                    block.querySelector('.step-category').textContent = category;
+                    block.querySelector('.step-description').textContent = desc;
+                    block.querySelector('.step-meta-user').innerHTML = `<strong>Zugewiesen an:</strong> ${userName}`;
+                    block.querySelector('.step-meta-due').innerHTML = `<strong>Fällig am:</strong> ${formatGermanDateTime(due)}`;
+                }
+                editingStepIndex = null;
+            } else {
+                const block = document.createElement('div');
+                block.className = 'metadata-group';
+                block.dataset.stepIndex = stepIndex;
+
+                block.innerHTML = `
+                    <input type="hidden" name="Steps[${stepIndex}].Order" value="${stepIndex}" />
+                    <input type="hidden" name="Steps[${stepIndex}].UserId" value="${userId}" />
+                    <input type="hidden" name="Steps[${stepIndex}].DueDate" value="${due}" />
+                    <input type="hidden" name="Steps[${stepIndex}].Kategorie" value="${category}" />
+                    <input type="hidden" name="Steps[${stepIndex}].Description" value="${desc}" />
+
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="step-category">${category}</h5>
+                            <p class="text-muted step-description">${desc}</p>
+                            <div class="meta-grid">
+                                <div class="step-meta-user"><strong>Zugewiesen an:</strong> ${userName}</div>
+                                <div class="step-meta-due"><strong>Fällig am:</strong> ${formatGermanDateTime(due)}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="editStep(${stepIndex})">✏️</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStep(this)">🗑️</button>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(block);
+                stepIndex++;
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('stepModal')).hide();
+        }
+
+
+        const formatGermanDateTime = (isoString) => {
+            const dt = new Date(isoString);
+            return dt.toLocaleString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+                       function removeStep(button) {
+            const group = button.closest('.metadata-group');
+            if (group) {
+                group.remove();
+                rebuildStepIndices();
+            }
+        }
+
+                        function editStep(index) {
+            const block = document.querySelector(`.metadata-group[data-step-index="${index}"]`);
+            if (!block) return;
+
+            document.getElementById('modal-step-description').value =
+                block.querySelector(`input[name="Steps[${index}].Description"]`).value;
+            document.getElementById('modal-step-user').value =
+                block.querySelector(`input[name="Steps[${index}].UserId"]`).value;
+            document.getElementById('modal-step-due').value =
+                block.querySelector(`input[name="Steps[${index}].DueDate"]`).value;
+            document.getElementById('modal-step-category').value =
+                block.querySelector(`input[name="Steps[${index}].Kategorie"]`).value;
+                
+                const categoryVal = block.querySelector(`input[name="Steps[${index}].Kategorie"]`).value;
+                const categorySelect = document.getElementById('modal-step-category');
+                const customBox = document.getElementById('modal-step-category-custom');
+                const preset = Array.from(categorySelect.options).some(options => opt.value === categoryVal);
+
+                if(!preset && categoryVal) {
+                    categorySelect.value = 'custom';
+                    toggleCustomCategory('custom');
+                    customBox.value = categoryVal;
+                } else {
+                    categorySelect.value = categoryVal;
+                    toggleCustomCategory(categoryVal);
+                }
+            editingStepIndex = index;
+            const modal = new bootstrap.Modal(document.getElementById('stepModal'));
+            modal.show();
+        }
+
+                function rebuildStepIndices() {
+            document.querySelectorAll('.metadata-group').forEach((div, newIndex) => {
+                div.dataset.stepIndex = newIndex;
+                div.querySelectorAll('input').forEach(input => {
+                    const name = input.name;
+                    const newName = name.replace(/Steps\[\d+\]/, `Steps[${newIndex}]`);
+                    input.name = newName;
+                });
+            });
+            stepIndex = document.querySelectorAll('.metadata-group').length;
+        }
+                       const searchInput = document.getElementById("modal-step-search");
+        const resultsBox = document.getElementById("search-results");
+
+               searchInput.addEventListener("input", async function () {
+            const term = this.value.trim();
+            resultsBox.innerHTML = "";
+            if (term.length < 2) return;
+
+            const res = await fetch(`/Workflows/Erstellen?handler=Search&term=${encodeURIComponent(term)}`);
+            const data = await res.json();
+            if (!data.success) return;
+
+            // Users anzeigen
+            if (Array.isArray(data.users)) {
+                data.users.forEach(user => {
+                    const div = document.createElement("div");
+                    div.classList.add("search-item");
+                    div.innerHTML = `
+                        <img src="${user.profileImageUrl}" class="user-avatar"/>
+                        <div>
+                            <div>${user.name}</div>
+                            <small class="text-muted">🏢 ${user.abteilung}</small>
+                        </div>
+                    `;
+                    div.onclick = () => {
+                        document.getElementById("modal-step-user").value = user.id;
+                        searchInput.value = user.name;
+                        resultsBox.innerHTML = "";
+                    };
+                    resultsBox.appendChild(div);
+                });
+            }
+
+            // Abteilungen anzeigen
+            if (Array.isArray(data.abteilungen)) {
+                data.abteilungen.forEach(abt => {
+                    const div = document.createElement("div");
+                    div.classList.add("search-item");
+                    div.innerHTML = `🏢 <strong>${abt.name}</strong>`;
+                    div.onclick = async () => {
+                        const res2 = await fetch(`/Workflows/Erstellen?handler=UsersByAbteilung&abteilungId=${abt.id}`);
+                        const data2 = await res2.json();
+                        resultsBox.innerHTML = "";
+
+                        if (Array.isArray(data2.users)) {
+                            data2.users.forEach(u => {
+                                const udiv = document.createElement("div");
+                                udiv.classList.add("search-item");
+                                udiv.innerHTML = `
+                                    <img src="${u.profileImageUrl}" class="user-avatar"/>
+                                    <div>${u.name}</div>
+                                `;
+                                udiv.onclick = () => {
+                                    document.getElementById("modal-step-user").value = u.id;
+                                    searchInput.value = u.name;
+                                    resultsBox.innerHTML = "";
+                                };
+                                resultsBox.appendChild(udiv);
+                            });
+                        }
+                    };
+                    resultsBox.appendChild(div);
+                });
+            }
+        });
+
+
+
+    </script>
+}
+<style>
+    /* Darkmode für das Modal beim Workflow-Erstellen */
+    /* ================================
+       Workflow Erstellen – Dark Style
+       ================================ */
+
+    body {
+        background-color: #12151c;
+        color: #d1d5db;
+       
+    }
+
+    .back-link a {
+        color: #4fd8ff;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+    h2, h4 {
+        color: #4fd8ff;
+        font-weight: 600;
+        margin-top: 1.2rem;
+    }
+
+    form label.form-label {
+        color: #4fd8ff;
+        font-weight: 500;
+    }
+
+    .form-control {
+        background-color: #1b2029;
+        color: #d1d5db;
+        border: 1px solid #2c3138;
+        border-radius: 6px;
+    }
+
+        .form-control:focus {
+            background-color: #1b2029;
+            border-color: #4fd8ff;
+            box-shadow: 0 0 0 0.15rem rgba(79, 216, 255, 0.25);
+            color: #fff;
+        }
+
+    textarea.form-control {
+        min-height: 80px;
+    }
+
+    input::file-selector-button {
+        background-color: #4fd8ff;
+        border: none;
+        padding: 6px 12px;
+        color: #000;
+        font-weight: 500;
+        border-radius: 6px;
+        margin-right: 10px;
+    }
+
+    /* Step Cards */
+    .metadata-group {
+        background-color: #1b2029;
+        border: 1px solid #2c3138;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .step-category {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #4fd8ff;
+        margin-bottom: 0.2rem;
+    }
+
+    .step-description {
+        color: #9ca3af;
+    }
+
+    .meta-grid {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .step-meta-user,
+    .step-meta-due {
+        font-size: 0.92rem;
+    }
+
+    /* Buttons */
+    button, .btn {
+        
+    }
+
+    .btn-outline-primary {
+        border-color: #4fd8ff;
+        color: #4fd8ff;
+    }
+
+        .btn-outline-primary:hover {
+            background-color: #4fd8ff;
+            color: #000;
+        }
+
+    .btn-outline-secondary {
+        border-color: #aaa;
+        color: #aaa;
+    }
+
+        .btn-outline-secondary:hover {
+            background-color: #ccc;
+            color: #000;
+        }
+
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+
+        .btn-outline-danger:hover {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+    .btn-success {
+        background-color: #198754;
+        border: none;
+    }
+
+        .btn-success:hover {
+            background-color: #157347;
+        }
+
+    /* Modal Styling */
+    #stepModal .modal-content {
+        background-color: #22232a;
+        color: #fff;
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    #stepModal .modal-header,
+    #stepModal .modal-body,
+    #stepModal .modal-footer {
+        background-color: transparent;
+        color: #fff;
+        border: none;
+    }
+
+    #stepModal .modal-title {
+        color: #4fd8ff;
+        font-weight: 600;
+    }
+
+    #stepModal .form-control,
+    #stepModal select.form-control,
+    #stepModal textarea.form-control {
+        background-color: #191b1f;
+        color: #fff;
+        border: 1.5px solid #33343b;
+    }
+
+    #stepModal .form-label {
+        color: #bbb;
+        font-weight: 600;
+    }
+
+    #stepModal input::placeholder,
+    #stepModal textarea::placeholder {
+        color: #777;
+    }
+
+    .search-dropdown {
+        position: absolute;
+        background: #1b2029;
+        border: 1px solid #2c3138;
+        border-radius: 6px;
+        margin-top: 2px;
+        width: 100%;
+        z-index: 1050;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .search-item {
+        display: flex;
+        align-items: center;
+        padding: 8px;
+        cursor: pointer;
+    }
+
+        .search-item:hover {
+            background: #2c2f38;
+        }
+
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        margin-right: 10px;
+        object-fit: cover;
+    }
+
+</style>

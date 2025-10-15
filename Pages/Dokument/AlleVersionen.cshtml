@@ -1,0 +1,494 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.AlleVersionenModel
+@{
+    ViewData["Title"] = "Alle versionierten Dokumente";
+}
+
+@section Styles {
+    <style>
+        /* === DARK CLEAN DESIGN === */
+        body, .content-area {
+            background: #181a1f !important;
+            color: #e0e0e0 !important;
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+        }
+
+        h2, h3 {
+            color: #e0e0e0 !important;
+            font-weight: 600;
+        }
+
+        #searchBox {
+            background: #22252b !important;
+            border: 1px solid #444 !important;
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            color: #e0e0e0;
+        }
+
+            #searchBox:focus {
+                border-color: #666 !important;
+                box-shadow: none !important;
+            }
+
+        .table thead th {
+            background: #202226 !important;
+            color: #bbb !important;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            border: none;
+        }
+
+        .table tbody tr {
+            background: #1f2126 !important;
+            border-bottom: 1px solid #2a2c33;
+            transition: background 0.2s;
+        }
+
+            .table tbody tr:hover {
+                background: #2a2c33 !important;
+            }
+
+        .table-group-header {
+            background: #262830 !important;
+            color: #e0e0e0 !important;
+            font-weight: 600;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            background: #2a2c33;
+            color: #ccc;
+            border: 1px solid #444;
+            font-weight: 500;
+        }
+
+            .badge:hover {
+                background: #3a3c44;
+                color: #fff;
+            }
+
+        .btn {
+            border-radius: 4px;
+            font-size: 0.8rem;
+            padding: 0.35rem 0.7rem;
+            color: #ccc;
+            border: 1px solid #444;
+            background: transparent;
+        }
+
+            .btn:hover {
+                background: #333;
+                color: #fff;
+                border-color: #666;
+            }
+
+        .modal-content {
+            background: #1f2126 !important;
+            color: #e0e0e0 !important;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .modal-header {
+            background: #262830 !important;
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Offcanvas Viewer */
+        #docViewer .offcanvas-body {
+            padding: 0;
+        }
+
+        #docFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #docViewer.offcanvas-end {
+            width: 60% !important;
+            max-width: 1000px;
+        }
+        /* Original Badge -> schlicht weiß */
+        .badge-original {
+            background: #fff !important;
+            color: #000 !important;
+            border: 1px solid #ccc;
+            font-weight: 600;
+        }
+
+        /* Version / Neueste Version -> DMS-Blau */
+        .badge-version {
+            background: #00c8ff !important; /* dein DMS-Farbton */
+            color: #000 !important;
+            font-weight: 600;
+            border: none;
+        }
+
+    </style>
+}
+
+<h2 class="mb-3"><i class="bi bi-layers"></i> Alle versionierten Dokumente</h2>
+
+<p class="mb-2">
+    <i class="bi bi-bar-chart-fill"></i>
+    Total Originale: <strong>@Model.GruppierteVersionen.Count</strong> |
+    Gesamt Versionen: <strong>@Model.GruppierteVersionen.Sum(g => g.Versions.Count)</strong>
+</p>
+<input type="text" id="searchBox" class="form-control form-control-sm mb-3" placeholder="🔍 Suche…" />
+
+<div class="text-end mb-3">
+    <a asp-page-handler="ExportCsv" class="btn btn-sm"><i class="bi bi-filetype-csv"></i> CSV</a>
+    <a asp-page-handler="ExportExcel" class="btn btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <a asp-page-handler="ExportPdf" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+</div>
+
+<!-- TABLE -->
+<div class="table-responsive mb-5">
+    <table class="table table-bordered table-hover align-middle table-dark">
+        <thead>
+            <tr>
+                <th style="width: 5%;"></th>
+                <th style="width: 30%;">📄 Version / Kategorie</th>
+                <th style="width: 15%;">Version Label</th>
+                <th style="width: 20%;">🗂️ Kategorie</th>
+                <th style="width: 25%;">📁 ObjectPath</th>
+                <th style="width: 15%;">📅 Hochgeladen am</th>
+                <th style="width: 20%;">⚙️ Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int gi = 0; gi < Model.GruppierteVersionen.Count; gi++)
+            {
+                var grp = Model.GruppierteVersionen[gi];
+                var gid = $"grp-{gi}";
+                var versions = grp.Versions.OrderByDescending(v => v.HochgeladenAm).ToList();
+
+                <tr class="table-group-header" data-group="@gid">
+                    <td colspan="7">
+                        <i class="bi bi-caret-down-square toggle-group me-2"></i>
+                        <strong><i class="bi bi-folder-symlink me-1"></i> @grp.OriginalName</strong>
+                        <span class="badge ms-2">@($"{versions.Count} Version(en)")</span>
+                    </td>
+                </tr>
+
+                @for (int j = 0; j < versions.Count; j++)
+                {
+                    var v = versions[j];
+                    var isLatest = (!v.IsOriginal && j == 0);
+
+                    // 👉 richtige ID je nach Original oder Version
+                    var entityId = v.IsOriginal ? v.OriginalId.ToString() : v.VersionId?.ToString();
+
+                    <tr class="version-row @(v.IsOriginal ? "row-original" : isLatest ? "row-latest" : "")"
+                        data-group="@gid"
+                        data-url="/Dokument/AlleVersionen?handler=PdfProxy&id=@entityId">
+
+                        <td></td>
+                        <td>
+                            <span class="fw-bold">@v.Dateiname</span><br />
+
+                            @if (v.IsOriginal)
+                            {
+                                <span class="badge badge-original">Original</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-version">Version</span>
+                                @if (isLatest)
+                                {
+                                    <span class="badge badge-version">Neueste</span>
+                                }
+                            }
+
+                            <span class="badge bg-secondary">@v.Kategorie</span>
+                        </td>
+
+
+                        <td>@v.VersionLabel</td>
+                        <td>@v.Kategorie</td>
+                        <td class="text-break">@v.ObjectPath</td>
+                        <td>@v.HochgeladenAm.ToString("dd.MM.yyyy - HH:mm")</td>
+
+                        <td class="text-nowrap">
+                            <!-- Details -->
+                            <!-- Preview -->
+                            <button type="button" class="btn btn-sm me-1 btn-preview"
+                                    data-url="/Dokument/AlleVersionen?handler=PdfProxy&id=@entityId"
+                                    title="Preview">
+                                <i class="bi bi-eye"></i>
+                            </button>
+
+
+                            <!-- Download -->
+                            <a class="btn btn-sm me-1"
+                               href="/Dokument/AlleVersionen?handler=PdfProxy&id=@entityId"
+                               download title="Download">
+                                <i class="bi bi-download"></i>
+                            </a>
+
+                            <!-- Kommentare -->
+                            <button class="btn btn-sm me-1"
+                                    onclick="openCommentModal('@entityId','@v.Dateiname')">
+                                <i class="bi bi-chat-dots"></i>
+                            </button>
+
+                            @if (v.CommentCount > 0)
+                            {
+                                <span class="badge bg-warning text-dark"
+                                      style="cursor:pointer;"
+                                      data-bs-toggle="popover"
+                                      data-bs-html="true"
+                                      title="Kommentare"
+                                      data-bs-content="@Html.Raw(v.CommentSummary)">
+                                    🗨️ @v.CommentCount
+                                </span>
+                            }
+
+                            <!-- Menü -->
+                            <div class="btn-group">
+                                <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark">
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="/Dokument/AlleVersionen?handler=PdfProxy&id=@entityId"
+                                           download>
+                                            ⬇️ Download
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                           onclick="openShareModal('@entityId','@v.Dateiname','/Dokument/AlleVersionen?handler=PdfProxy&id=@entityId')">
+                                            ✉️ Per E-Mail teilen
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- MODALS -->
+<form id="commentForm">@Html.AntiForgeryToken()</form>
+
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📝 Kommentar / Historie</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="commentHistory">Lädt...</div>
+                <textarea id="newComment" class="form-control mt-2" placeholder="Neuer Kommentar…"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="saveComment()">Speichern</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">✉️ Dokument teilen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="shareDocId" />
+                <div class="mb-2">
+                    <label>Empfänger</label>
+                    <input type="email" id="shareTo" class="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label>Betreff</label>
+                    <input type="text" id="shareSubject" class="form-control" />
+                </div>
+                <div class="mb-2">
+                    <label>Nachricht</label>
+                    <textarea id="shareMessage" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="sendEmail()">Senden</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dokument Viewer -->
+<div class="offcanvas offcanvas-end bg-dark text-light" tabindex="-1" id="docViewer">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">📄 Dokument Viewer</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <iframe id="docFrame"></iframe>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const popovers = document.querySelectorAll('[data-bs-toggle="popover"]');
+            popovers.forEach(el => {
+                new bootstrap.Popover(el, { trigger: 'click', html: true, sanitize: false });
+            });
+
+            document.querySelectorAll(".toggle-group").forEach(t => {
+                t.addEventListener("click", () => {
+                    const g = t.closest("tr").getAttribute("data-group");
+                    document.querySelectorAll(`.version-row[data-group='${g}']`)
+                        .forEach(r => r.classList.toggle("d-none"));
+                    t.classList.toggle("bi-caret-down-square");
+                    t.classList.toggle("bi-caret-right-square");
+                });
+            });
+
+            document.getElementById("searchBox").addEventListener("keyup", () => {
+                const val = document.getElementById("searchBox").value.toLowerCase();
+                document.querySelectorAll(".version-row").forEach(r => {
+                    r.style.display = r.innerText.toLowerCase().includes(val) ? "" : "none";
+                });
+            });
+
+            // Doppelklick öffnet Viewer
+            document.querySelectorAll(".version-row").forEach(r => {
+                r.addEventListener("dblclick", () => {
+                    const url = r.getAttribute("data-url");
+                    openViewer(url);
+                });
+            });
+        });
+
+        function downloadAll(orig) {
+            window.location = `?handler=DownloadAll&original=${orig}`;
+        }
+
+        function archiveOld(orig) {
+            if (!confirm("Alte Versionen wirklich archivieren?")) return;
+            fetch(`?handler=ArchiveOld&original=${orig}`, {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            }).then(r => r.ok ? location.reload() : alert("Fehler beim Archivieren"));
+        }
+
+        let currentDocId;
+        function openCommentModal(docId, fname) {
+            currentDocId = docId;
+            fetch(`?handler=GetComments&docId=${docId}`)
+                .then(r => r.json())
+                .then(j => {
+                    document.getElementById("commentHistory").innerHTML = j.html;
+                    const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+                    modal.show();
+                });
+        }
+
+        function saveComment() {
+            const txt = document.getElementById("newComment").value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch(`?handler=AddComment`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `dokumentId=${encodeURIComponent(currentDocId)}&text=${encodeURIComponent(txt)}`
+            }).then(r => {
+                if (r.ok) {
+                    document.getElementById("newComment").value = "";
+                    openCommentModal(currentDocId);
+                } else {
+                    alert("Fehler beim Speichern");
+                }
+            });
+        }
+
+        let currentShareDocId = null;
+              function openShareModal(docId, fname, url) {
+            const baseUrl = window.location.origin;
+
+            document.getElementById("shareDocId").value = docId;
+            document.getElementById("shareSubject").value = "Dokument teilen: " + fname;
+            document.getElementById("shareMessage").value = "Hier ist der Link: " + baseUrl + url;
+
+            const modal = new bootstrap.Modal(document.getElementById('shareModal'));
+            modal.show();
+        }
+
+
+        function sendEmail() {
+            const docId = document.getElementById("shareDocId").value;
+            const to = document.getElementById("shareTo").value;
+            const subject = document.getElementById("shareSubject").value;
+            const message = document.getElementById("shareMessage").value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            if (!to) {
+                alert("Bitte eine Empfänger-Adresse eingeben!");
+                return;
+            }
+
+            fetch(`?handler=SendEmail`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `dokumentId=${encodeURIComponent(docId)}&to=${encodeURIComponent(to)}&subject=${encodeURIComponent(subject)}&message=${encodeURIComponent(message)}`
+            })
+            .then(r => r.json())
+            .then(j => {
+                if (j.ok) {
+                    alert("✅ E-Mail gesendet!");
+                    bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
+                } else {
+                    alert("❌ Fehler: " + (j.error || "Senden fehlgeschlagen"));
+                }
+            })
+            .catch(err => {
+                alert("❌ Fehler: " + err);
+            });
+        }
+
+        function openViewer(url) {
+            const iframe = document.getElementById("docFrame");
+            iframe.src = url;
+            const viewer = new bootstrap.Offcanvas(document.getElementById("docViewer"));
+            viewer.show();
+        }
+
+                document.addEventListener("DOMContentLoaded", function () {
+            // ... dein existierender Code ...
+
+            // Preview-Button Klick → Viewer öffnen
+            document.querySelectorAll(".btn-preview").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const url = btn.getAttribute("data-url");
+                    openViewer(url);
+                });
+            });
+        });
+
+    </script>
+}

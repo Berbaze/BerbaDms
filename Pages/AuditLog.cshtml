@@ -1,0 +1,153 @@
+﻿@page
+@model DmsProjeckt.Pages.AuditLogModel
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<div class="back-link">
+    <a asp-page="/Index">← Zurück zur Startseite</a>
+</div>
+
+<div class="page-title">Audit Log</div>
+<form method="get" class="mb-3" style="margin-bottom:16px;">
+    <label for="kategorie-filter">Kategorie filtern:</label>
+    <select id="kategorie-filter" name="KategorieFilter" class="kategorie-select" onchange="this.form.submit()">
+        <option value="">Alle</option>
+        @foreach (var k in Model.Kategorien)
+        {
+            if (Model.KategorieFilter == k)
+            {
+                <option value="@k" selected>@k</option>
+            }
+            else
+            {
+                <option value="@k">@k</option>
+            }
+        }
+    </select>
+
+</form>
+
+
+
+<div class="table-responsive">
+    <table class="sortierbare-tabelle">
+        <thead>
+            <tr>
+                <th>Aktion</th>
+                <th>Benutzer</th>
+                <th>E-Mail</th>
+                <th>Zeitstempel</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.AuditLogEntries.Count == 0)
+            {
+                <tr>
+                    <td colspan="4" style="text-align:center; color:#999;">
+                        Kein Audit-Log gefunden.
+                    </td>
+                </tr>
+            }
+            else
+            {
+                foreach (var log in Model.AuditLogEntries)
+                {
+                    <tr>
+                        <td>@log.Aktion</td>
+                        <td>
+                            <span style="color:#90caf9; font-weight:bold;">
+                                @log.BenutzerName
+                            </span>
+                            
+                        </td>
+                        <td>@log.BenutzerEmail</td>
+                        <td>@log.Zeitstempel.ToString("dd.MM.yyyy HH:mm:ss")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<style>
+
+    body {
+    background-color: #181a1e;
+    color: #fffbe7;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.page-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.back-link a {
+    color: #4fd8ff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.back-link a:hover {
+    text-decoration: underline;
+}
+
+.kategorie-select {
+    background: #23262b;
+    color: #ffc107;
+    border: 1.5px solid #33364a;
+    padding: 0.4em 0.8em;
+    border-radius: 7px;
+    font-size: 1em;
+}
+
+.table-responsive {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.sortierbare-tabelle {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1em;
+    background-color: #181a1e;
+    color: #fffbe7;
+}
+
+.sortierbare-tabelle thead tr {
+    background: linear-gradient(90deg, #ffe17a 60%, #23262b 100%);
+}
+
+.sortierbare-tabelle th {
+    color: #23262b;
+    font-weight: 800;
+    padding: 0.8em 1em;
+    border-bottom: 2px solid #ffce48;
+    text-align: left;
+}
+
+.sortierbare-tabelle td {
+    padding: 0.6em 1em;
+    border-bottom: 1px solid #23262b;
+}
+
+.sortierbare-tabelle tr:hover {
+    background: #23262b;
+    transition: background 0.2s;
+}
+
+.sortierbare-tabelle td span {
+    color: #90caf9;
+    font-weight: bold;
+}
+
+.sortierbare-tabelle td[colspan="4"] {
+    text-align: center;
+    color: #999;
+    padding: 1rem;
+}
+
+
+</style>

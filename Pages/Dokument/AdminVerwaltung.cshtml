@@ -1,0 +1,178 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.AdminVerwaltungModel
+@{
+    ViewData["Title"] = "Benutzerrollen verwalten";
+}
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success text-white">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+<h2 class="text-white">Benutzerrollen verwalten</h2>
+
+<button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#createUserModal">
+    ➕ Neuen Benutzer erstellen
+</button>
+
+<table class="table table-bordered text-white fw-bold" ">
+    <thead>
+        <tr>
+            <th>Benutzername</th>
+            <th>Aktuelle Rolle</th>
+            <th>Rolle ändern</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in Model.Users)
+    {
+        <tr>
+            <td>@user.UserName</td>
+           <td>
+    @if (user.CurrentRole == "Admin")
+    {
+        <span class="badge bg-danger text-white">@user.CurrentRole</span>
+    }
+    else if (user.CurrentRole == "Editor")
+    {
+        <span class="badge bg-warning text-dark">@user.CurrentRole</span>
+    }
+    else if (user.CurrentRole == "Viewer")
+    {
+        <span class="badge bg-success text-white">@user.CurrentRole</span>
+    }
+    else
+    {
+        <span class="badge bg-secondary">@user.CurrentRole</span>
+    }
+</td>
+
+            <td>
+                <form method="post">
+                    <input type="hidden" name="UserId" value="@user.UserId" />
+                    <select name="SelectedRole" class="form-select text-dark">
+                        @foreach (var role in user.AvailableRoles)
+                        {
+                            var selected = role == user.CurrentRole ? "selected=\"selected\"" : "";
+                            @:<option value="@role" @Html.Raw(selected)>@role</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-primary mt-2">Aktualisieren</button>
+                </form>
+            </td>
+        </tr>
+    }
+
+    </tbody>
+
+</table>
+<h4 class="text-white mt-5">📝 Admin-Aktivitätsprotokoll</h4>
+
+<table class="table table-sm table-dark text-white">
+    <thead class="table-light text-dark">
+        <tr>
+            <th>Zeitpunkt</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Logs != null && Model.Logs.Any())
+        {
+            foreach (var log in Model.Logs)
+            {
+                <tr>
+                    <td><span class="text-info">@log.Timestamp.ToString("g")</span></td>
+                    <td>@log.Action</td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="2" class="text-muted">Keine protokollierten Aktivitäten vorhanden.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createUserModalLabel">Neuen Benutzer anlegen</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" asp-page-handler="CreateUser">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="Username" class="form-label">Benutzername</label>
+            <input type="text" class="form-control" name="Username" required />
+          </div>
+          <div class="mb-3">
+            <label for="Email" class="form-label">E-Mail</label>
+            <input type="email" class="form-control" name="Email" required />
+          </div>
+          <div class="mb-3">
+            <label for="Password" class="form-label">Passwort</label>
+            <input type="password" class="form-control" name="Password" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary" data-bs-target="#assignRoleModal" data-bs-toggle="modal" data-bs-dismiss="modal">
+            Weiter ➡️
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="assignRoleModal" tabindex="-1" aria-labelledby="assignRoleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assignRoleModalLabel">Rolle & Berechtigungen</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" asp-page-handler="AssignRole">
+        <div class="modal-body">
+          <input type="hidden" name="UserId" id="createdUserId" />
+
+          <div class="mb-3">
+            <label class="form-label">Rolle wählen</label>
+            <select class="form-select text-dark" name="Role">
+              <option value="Admin">Admin</option>
+              <option value="Editor">Editor</option>
+              <option value="Viewer">Viewer</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Optionale Ordnerrechte</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="Permissions" value="/ordnerA:read" id="perm1">
+              <label class="form-check-label" for="perm1">Ordner A lesen</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="Permissions" value="/ordnerA:write" id="perm2">
+              <label class="form-check-label" for="perm2">Ordner A schreiben</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Benutzer erstellen ✅</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    setTimeout(function () {
+        const alertBox = document.querySelector('.alert');
+        if (alertBox) {
+            alertBox.style.display = 'none';
+        }
+    }, 3000);
+</script>

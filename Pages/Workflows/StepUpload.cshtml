@@ -1,0 +1,700 @@
+﻿@page 
+@model DmsProjeckt.Pages.Workflows.StepUploadModel
+@{
+    ViewData["Title"] = "📤 Datei hochladen & speichern mit Metadaten";
+
+    string[] allFields = {
+        "Rechnungsnummer", "Rechnungsdatum", "Lieferdatum", "ArtikelAnzahl",
+        "Email", "Telefon", "Adresse", "AnsprechPartner", "Website",
+        "Gesamtpreis", "Nettobetrag", "Steuerbetrag", "Bankverbindung", "IBAN", "BIC",
+        "UIDNummer", "Zahlungsbedingungen", "Faelligkeitsdatum", "AbsenderAdresse", "Zeitraum", "Lieferart"
+    };
+
+    var fieldsWithValue = allFields
+        .Where(f => !string.IsNullOrWhiteSpace(Model.GetType().GetProperty(f)?.GetValue(Model)?.ToString()))
+        .ToList();
+
+    var fieldsWithoutValue = allFields.Except(fieldsWithValue);
+}
+
+
+
+
+<style>
+    :root {
+        --primary-color: #90caf9;
+        --primary-hover: #64b5f6;
+        --bg-dark: #1e1e1e;
+        --bg-darker: #181818;
+        --bg-input: #2c2c2c;
+        --text-light: #ffffff;
+        --text-muted: #b0b0b0;
+        --border-radius: 1rem;
+        --transition: all 0.3s ease;
+    }
+
+    .container {
+        max-width: 1200px;
+    }
+
+    .form-section {
+        background-color: var(--bg-dark);
+        border-radius: var(--border-radius);
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        position: relative;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+        .form-section:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            transform: translateY(-3px);
+        }
+
+        .form-section h4 {
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 1.8rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid rgba(144, 202, 249, 0.2);
+            padding-bottom: 1rem;
+        }
+
+    .metadata-group {
+        background-color: var(--bg-darker);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+        transition: var(--transition);
+        border-left: 3px solid var(--primary-color);
+    }
+
+        .metadata-group:hover {
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .metadata-group h5 {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.8rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: var(--text-light);
+        margin-bottom: 0.8rem;
+        display: block;
+        transition: var(--transition);
+    }
+
+    .form-control {
+        background-color: var(--bg-input);
+        color: var(--text-light);
+        border: 1px solid rgba(144, 202, 249, 0.3);
+        padding: 0.8rem 1.2rem;
+        border-radius: 0.6rem;
+        transition: var(--transition);
+        font-size: 1rem;
+    }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(144, 202, 249, 0.25);
+            background-color: rgba(44, 44, 44, 0.8);
+        }
+
+        .form-control:hover {
+            border-color: var(--primary-hover);
+        }
+
+    .autosize-textarea {
+        background-color: var(--bg-input);
+        color: var(--text-light);
+        border: 1px solid rgba(144, 202, 249, 0.3);
+        font-size: 1.1rem;
+        padding: 1.1rem 1.25rem;
+        min-height: 75px;
+        border-radius: 0.6rem;
+        width: 100%;
+        white-space: pre-line;
+        resize: none;
+        overflow-y: hidden;
+        box-sizing: border-box;
+        transition: var(--transition);
+    }
+
+        .autosize-textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(144, 202, 249, 0.25);
+            background-color: rgba(44, 44, 44, 0.8);
+        }
+
+    .toggle-metadata-btn {
+        background-color: transparent;
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+        font-weight: bold;
+        padding: 0.75rem 2rem;
+        font-size: 1rem;
+        margin-top: 1.5rem;
+        border-radius: 2rem;
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+        .toggle-metadata-btn:hover {
+            background-color: var(--primary-color);
+            color: #121212;
+            transform: translateY(-2px);
+        }
+
+    .metadata-extra {
+        display: none;
+        animation: fadeIn 0.5s ease;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .progress {
+        background-color: #333;
+        height: 26px;
+        border-radius: 2rem;
+        overflow: hidden;
+        margin-top: 1.5rem;
+    }
+
+    .progress-bar {
+        font-weight: bold;
+        font-size: 1rem;
+        background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+        background-size: 1rem 1rem;
+        transition: width 0.3s ease;
+    }
+
+    /* Style du sélecteur de fichier */
+    input[type="file"] {
+        background-color: var(--bg-darker);
+        color: var(--text-light);
+        border: 2px dashed var(--primary-color);
+        border-radius: var(--border-radius);
+        padding: 2.5rem;
+        cursor: pointer;
+        text-align: center;
+        position: relative;
+        transition: var(--transition);
+    }
+
+        input[type="file"]:hover {
+            border-color: var(--primary-hover);
+            background-color: rgba(144, 202, 249, 0.05);
+        }
+
+    /* Amélioration des boutons */
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.8rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 12px rgba(0,0,0,0.3);
+        }
+
+    .btn-lg {
+        padding: 0.9rem 2.2rem;
+        font-size: 1.1rem;
+    }
+
+    .btn-success {
+        background: linear-gradient(to right, #28a745, #20c997);
+        border: none;
+    }
+
+    .btn-outline-primary {
+        border: 2px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: #121212;
+        }
+
+    .btn-outline-info {
+        border: 2px solid #17a2b8;
+        color: #17a2b8;
+        background: transparent;
+    }
+
+        .btn-outline-info:hover {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+    /* Formulaires améliorés */
+    .form-actions {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+        justify-content: center;
+    }
+
+    /* Alerte */
+    .alert {
+        border-radius: var(--border-radius);
+        padding: 1.2rem;
+        margin-bottom: 2rem;
+        border-left: 5px solid;
+        animation: slideIn 0.4s ease;
+    }
+
+    .alert-info {
+        background-color: rgba(25, 118, 210, 0.1);
+        border-left-color: #1976d2;
+    }
+
+    .alert-danger {
+        background-color: rgba(211, 47, 47, 0.1);
+        border-left-color: #d32f2f;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Toast */
+    .toast {
+        border-radius: var(--border-radius);
+    }
+
+    /* Custom fields */
+    .custom-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        animation: fadeIn 0.4s ease;
+    }
+
+    #uploadProgress {
+        display: none;
+        margin-top: 2rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .form-section, .metadata-group {
+            padding: 1.5rem;
+        }
+
+        .meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+
+    .d-none {
+        display: none !important;
+    }
+</style>
+<!-- Step- und Workflow-Infos -->
+<div class="back-link">
+    <a asp-page="/Tests/Aufgaben">← Zurück zu Aufgaben</a>
+</div
+<div class="form-section mb-4">
+    <h4>🔗 Schritt-Informationen</h4>
+    <div class="meta-grid">
+        <div><strong>Workflow:</strong> @Model.WorkflowTitle</div>
+        <div><strong>Schritt:</strong> @Model.StepTitle</div>
+        <div><strong>Fälligkeitsdatum:</strong> @Model.StepDue?.ToString("dd.MM.yyyy")</div>
+        <div><strong>Zugewiesen an:</strong> @Model.StepAssignedUserName</div>
+        <div><strong>Kategorie:</strong> Workflow</div>
+        <div><strong>Beschreibung:</strong> @Model.StepDescription</div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="alert alert-info text-light bg-dark border-secondary mb-4">
+        <strong>ℹ️ Hinweis:</strong> Auf dieser Seite können Sie PDF-Dateien oder Bilder hochladen. Nach dem Hochladen werden die Dokumente automatisch analysiert und relevante Metadaten wie Rechnungsnummer, Datum, Beträge, Kundeninformationen usw. extrahiert.
+    </div>
+    <form method="post" enctype="multipart/form-data" novalidate>
+        <div class="form-section">
+            <h4>📁 Datei Auswahl</h4>
+            <input asp-for="Datei" type="file" class="form-control" required />
+            
+
+            <div class="mt-3">
+                <label class="form-label">Kategorie</label>
+                <input asp-for="Kategorie" class="form-control bg-dark text-light border-secondary"
+                       value="Workflow" readonly disabled id="kategorieInput" />
+            </div>
+        </div>
+
+        <div class="text-center my-4">
+            <button type="button" id="showMetadataBtn" class="btn btn-outline-primary">
+                ➕ Metadaten anzeigen
+            </button>
+        </div>
+        <div id="metadataFields" class="d-none">
+        <div class="form-section">
+            <h4>📄 Allgemeine Informationen</h4>
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label asp-for="Kategorie" class="form-label">Kategorie</label>
+                    <input asp-for="Kategorie"
+                           class="form-control bg-dark text-light border-secondary"
+                           list="kategorienListe"
+                           placeholder="z. B. rechnungen oder projekt_A" 
+                           id="kategorieEditable"/>
+                    <datalist id="kategorienListe">
+                        <option value="rechnungen" />
+                        <option value="gebühren" />
+                        <option value="verträge" />
+                        <option value="projekt_A" />
+                        <option value="korrespondenz" />
+                    </datalist>
+                </div>
+
+
+                <div class="col-md-6">
+                    <label asp-for="Faelligkeitsdatum" class="form-label">Fälligkeitsdatum</label>
+                    <input asp-for="Faelligkeitsdatum" type="date" class="form-control bg-dark text-light border-secondary" />
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Beschreibung" class="form-label">Beschreibung</label>
+                    <input asp-for="Beschreibung" class="form-control bg-dark text-light border-secondary" />
+                </div>
+            </div>
+        </div>
+
+
+            @if (Request.Query.ContainsKey("analyzed") || fieldsWithValue.Any())
+            {
+        @if (fieldsWithValue.Any())
+        {
+            <div class="form-section">
+                <h4>📂 Automatisch erkannte Metadaten</h4>
+
+                <div class="metadata-group">
+                    <h5>🧾 Faktura Details</h5>
+                    <div class="meta-grid">
+                        @foreach (var field in new[] { "Rechnungsnummer", "Rechnungsdatum", "Lieferdatum", "ArtikelAnzahl" })
+                        {
+                            if (fieldsWithValue.Contains(field))
+                            {
+                                @await Html.PartialAsync("_TextareaFieldPartialStep", Model, new ViewDataDictionary(ViewData) { { "FieldName", field } })
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="metadata-group">
+                    <h5>👤 Kundeninformationen</h5>
+                    <div class="meta-grid">
+                        @foreach (var field in new[] { "Email", "Telefon", "Adresse", "AnsprechPartner", "Website" })
+                        {
+                            if (fieldsWithValue.Contains(field))
+                            {
+                                @await Html.PartialAsync("_TextareaFieldPartialStep", Model, new ViewDataDictionary(ViewData) { { "FieldName", field } })
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="metadata-group">
+                    <h5>💰 Zahlungsinformationen</h5>
+                    <div class="meta-grid">
+                        @foreach (var field in new[] { "Gesamtpreis", "Nettobetrag", "Steuerbetrag", "Bankverbindung", "IBAN", "BIC" })
+                        {
+                            if (fieldsWithValue.Contains(field))
+                            {
+                                @await Html.PartialAsync("_TextareaFieldPartialStep", Model, new ViewDataDictionary(ViewData) { { "FieldName", field } })
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="button" id="toggleMetadata" class="toggle-metadata-btn">➕ Mehr Metadaten anzeigen</button>
+                </div>
+
+                <div id="extraMetadata" class="metadata-extra mt-4">
+                    <div class="metadata-group">
+                        <h5>📦 Weitere Daten</h5>
+                        <div class="meta-grid">
+                            @foreach (var field in fieldsWithoutValue)
+                            {
+                                @await Html.PartialAsync("_TextareaFieldPartialStep", Model, new ViewDataDictionary(ViewData) { { "FieldName", field } })
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        }
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div id="analyzeToast" class="toast align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        🧠 PDF wird analysiert... bitte warten...
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📄 Dokumenteigenschaften (PDF) -->
+        <div class="form-section">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="text-light mb-0">✍️ Dokumenteigenschaften (PDF)</h5>
+                <button type="button" class="btn btn-outline-info btn-sm toggle-section" data-target="pdfMetadata">
+                    ➕ Anzeigen
+                </button>
+            </div>
+            <div id="pdfMetadata" class="d-none">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Autor</label>
+                        <input class="form-control bg-dark text-light border-secondary" placeholder="PDF Autor..." />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Betreff</label>
+                        <input class="form-control bg-dark text-light border-secondary" placeholder="PDF Betreff..." />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Schlüsselwörter</label>
+                        <input class="form-control bg-dark text-light border-secondary" placeholder="Keywords, tags..." />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📝 Benutzerdefinierte Metadaten -->
+        <div class="form-section mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="text-light mb-0">📝 Benutzerdefinierte Metadaten</h5>
+                <button type="button" class="btn btn-outline-info btn-sm toggle-section" data-target="customMetadata">
+                    ➕ Anzeigen
+                </button>
+            </div>
+            <div id="customMetadata" class="d-none">
+                <div id="customFieldsContainer" class="meta-grid">
+                    <div class="custom-field">
+                        <input type="text" name="CustomKeys" class="form-control" placeholder="Beispiel: Projektnummer" />
+                        <textarea name="CustomValues" class="form-control autosize-textarea" placeholder="Wert hier..."></textarea>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-info mt-3">Neues Feld hinzufügen</button>
+            </div>
+        </div>
+
+        
+        <!-- ✅ Boutons bien espacés -->
+       
+        </div>
+        <div class="form-actions my-4 text-center">
+            <input type="hidden" id="inputDateipfad" asp-for="Dateipfad" />
+            <input type="hidden" id="inputDateiname" asp-for="Dateiname" />
+            <input type="hidden" asp-for="WorkflowId" value="@Model.WorkflowId" />
+            <input type="hidden" asp-for="StepId" value="@Model.StepId" />
+                <button type="submit" asp-page-handler="Save" class="btn btn-success btn-lg">💾 Speichern & Schritt abschließen</button>
+            <button type="submit" asp-page-handler="Analyze" class="btn btn-outline-primary btn-lg">🧠 Analysieren</button>
+            
+        </div>
+        <div id="uploadProgress">
+            <label class="form-label">📄 Datei wird analysiert… bitte warten</label>
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%;">
+                    Analyse läuft...
+                </div>
+            </div>
+        </div>
+
+    </form>
+</div>
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger fw-bold">
+        @TempData["Error"]
+    </div>
+}
+
+
+@section Scripts {
+    <script>
+                document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('showMetadataBtn');
+            const metadataFields = document.getElementById('metadataFields');
+            const kategorieInput = document.getElementById('kategorieInput');
+            const kategorieEditable = document.getElementById('kategorieEditable');
+            btn.addEventListener('click', function() {
+                metadataFields.classList.remove('d-none');
+                btn.style.display = 'none';
+                if (kategorieInput) {
+                    kategorieInput.disabled = true;
+                    kategorieInput.readOnly = true;
+                }
+                if (kategorieEditable) {
+                    kategorieEditable.style.display = 'block';
+                }
+            });
+            if (kategorieEditable) kategorieEditable.style.display = 'none'; // initial hide
+        });
+          // Script pour gérer les onglets de métadonnées et autres fonctionnalités
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion des onglets de métadonnées
+            const tabs = document.querySelectorAll('.metadata-tab');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Désactiver tous les onglets
+                    tabs.forEach(t => t.classList.remove('active'));
+
+                    // Cacher tous les panneaux
+                    document.querySelectorAll('.metadata-pane').forEach(pane => {
+                        pane.classList.remove('active');
+                    });
+
+                    // Activer l'onglet cliqué
+                    this.classList.add('active');
+
+                    // Afficher le panneau correspondant
+                    const target = this.getAttribute('data-target');
+                    document.getElementById(`${target}-content`).classList.add('active');
+                });
+            });
+
+            // Gestion du bouton "plus de métadonnées"
+            const toggleBtn = document.getElementById('toggleMetadata');
+            const extraMetadata = document.getElementById('extraMetadata');
+
+            if (toggleBtn && extraMetadata) {
+                toggleBtn.addEventListener('click', function() {
+                    const isVisible = extraMetadata.style.display === 'block';
+
+                    extraMetadata.style.display = isVisible ? 'none' : 'block';
+                    toggleBtn.textContent = isVisible
+                        ? '➕ Mehr Metadaten anzeigen'
+                        : '➖ Weniger Metadaten anzeigen';
+                });
+            }
+
+            // Auto-resize pour les textareas
+            const textareas = document.querySelectorAll('.autosize-textarea');
+
+            function resizeTextarea(textarea) {
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight) + 'px';
+            }
+
+            textareas.forEach(textarea => {
+                resizeTextarea(textarea);
+                textarea.addEventListener('input', function() {
+                    resizeTextarea(this);
+                });
+            });
+
+            // Gestion du bouton d'ajout de champ personnalisé
+            const addFieldBtn = document.getElementById('addCustomField');
+            const customFieldsContainer = document.getElementById('customFieldsContainer');
+
+            if (addFieldBtn && customFieldsContainer) {
+                addFieldBtn.addEventListener('click', function() {
+                    const newField = document.createElement('div');
+                    newField.className = 'custom-field';
+                    newField.innerHTML = `
+                        <input type="text" name="CustomKeys" class="form-control" placeholder="Beispiel: Projektnummer" />
+                        <textarea name="CustomValues" class="form-control autosize-textarea" placeholder="Wert hier..."></textarea>
+                    `;
+
+                    customFieldsContainer.appendChild(newField);
+
+                    // Initialize auto-resize for the new textarea
+                    const newTextarea = newField.querySelector('.autosize-textarea');
+                    resizeTextarea(newTextarea);
+                    newTextarea.addEventListener('input', function() {
+                        resizeTextarea(this);
+                    });
+                });
+            }
+
+            // Animation d'upload
+            const fileInput = document.getElementById('fileUpload');
+            const uploadProgress = document.getElementById('uploadProgress');
+
+            if (fileInput && uploadProgress) {
+                fileInput.addEventListener('change', function() {
+                    if (this.files.length > 0) {
+                        const uploadLabel = document.querySelector('.upload-label');
+                        if (uploadLabel) {
+                            uploadLabel.textContent = this.files[0].name;
+                        }
+                    }
+                });
+            }
+            });
+            document.querySelectorAll('.toggle-section').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const targetId = btn.getAttribute('data-target');
+                const section = document.getElementById(targetId);
+
+                if (!section) return;
+
+                const isHidden = section.classList.contains('d-none');
+
+                section.classList.toggle('d-none');
+                btn.innerHTML = isHidden ? '➖ Verbergen' : '➕ Anzeigen';
+            });
+        });
+                 
+
+    </script>
+
+}
+
+

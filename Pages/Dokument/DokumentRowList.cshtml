@@ -1,0 +1,21 @@
+﻿@model IEnumerable<DmsProjeckt.Data.DmsFile>
+
+@if (Model != null && Model.Any())
+{
+    <tr class="bg-secondary bg-opacity-10 text-info fw-bold">
+        <td colspan="7">📄 Gefilterte Dokumente</td>
+    </tr>
+
+    @foreach (var doc in Model)
+    {
+        @Html.Partial("Dokument/_DokumentTableRow", doc)
+    }
+}
+else
+{
+    <tr>
+        <td colspan="7" class="text-muted text-center py-3">
+            ⚠️ Keine Dokumente gefunden
+        </td>
+    </tr>
+}

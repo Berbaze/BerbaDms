@@ -1,0 +1,1047 @@
+﻿@page
+@model DmsProjeckt.Pages.Dokument.DashboardAdminModel
+@using Newtonsoft.Json
+@{
+    var chartLabelsTag = JsonConvert.SerializeObject(Model.AktivitaetenProTag.Keys);
+    var chartDataTag = JsonConvert.SerializeObject(Model.AktivitaetenProTag.Values);
+
+    var chartLabelsTyp = JsonConvert.SerializeObject(Model.AktionenProTyp.Keys);
+    var chartDataTyp = JsonConvert.SerializeObject(Model.AktionenProTyp.Values);
+
+    var chartLabelsUser = JsonConvert.SerializeObject(Model.AktionenProBenutzer.Keys);
+    var chartDataUser = JsonConvert.SerializeObject(Model.AktionenProBenutzer.Values);
+    
+        ViewData["HideSidebar"] = false;
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success text-white">@TempData["SuccessMessage"]</div>
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex gap-2 mb-3">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createUserModal">
+            ➕ Neuen Benutzer erstellen
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userListModal">
+            👥 Benutzer verwalten
+        </button>
+        <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#folderPermissionsModal">
+            📂 Ordner-Berechtigungen verwalten
+        </button>
+    </div>
+
+    <div class="row">
+        <!-- 📅 Diagramm: Aktivitäten der letzten Tage -->
+        <div class="col-md-6 mb-4">
+            <h5 class="text-white">📅 Aktivität der letzten Tage</h5>
+            <p class="text-secondary small">Zeigt die Gesamtanzahl aller Aktionen nach Tag sortiert.</p>
+            <div style="height: 300px;"><canvas id="chart-aktivitaeten"></canvas></div>
+        </div>
+
+        <!-- 🧩 Diagramm: Aktionen nach Typ -->
+        <div class="col-md-6 mb-4">
+            <h5 class="text-white">🧩 Aktionen nach Typ (Tortendiagramm)</h5>
+            <p class="text-secondary small">Zeigt, welche Aktionen am häufigsten ausgeführt wurden (z. B. Dokument analysiert, gelöscht).</p>
+            <div style="height: 300px;"><canvas id="chart-aktionen-typ"></canvas></div>
+        </div>
+
+        <!-- 👤 Diagramm: Aktionen pro Benutzer -->
+        <div class="col-12 mb-5">
+            <h5 class="text-white">👤 Aktionen pro Benutzer (Balkendiagramm)</h5>
+            <p class="text-secondary small">Vergleich der Anzahl von Aktionen pro Benutzer – wer ist am aktivsten?</p>
+            <div style="height: 350px;"><canvas id="chart-aktionen-benutzer"></canvas></div>
+        </div>
+    </div>
+
+    <!-- 📝 Audit-Log -->
+    <div class="row">
+        <div class="col-12">
+            <h5 class="text-white">📝 Admin-Aktivitätsprotokoll</h5>
+            <p class="text-secondary small">Detaillierte Liste aller administrativen Aktionen mit Zeitstempel.</p>
+            <table class="table table-sm table-dark text-white">
+                <thead class="table-light text-dark">
+                    <tr>
+                        <th>Zeitpunkt</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Logs != null && Model.Logs.Any())
+                    {
+                        foreach (var log in Model.Logs)
+                        {
+                            <tr>
+                                <td><span class="text-info">@log.Timestamp.ToString("g")</span></td>
+                                <td>@log.Action</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="2" class="text-muted">Keine protokollierten Aktivitäten vorhanden.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Modal 1: User erstellen -->
+<!-- Modal 1: Userdaten -->
+<div class="modal fade" id="userListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Benutzerübersicht</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-dark table-striped">
+                    <div class="mb-3">
+                        <input type="text" id="userSearch" class="form-control" placeholder="🔍 Suchen nach Name, Abteilung oder Email...">
+                    </div>
+
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Abteilung</th>
+                            <th>Email</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        @foreach (var u in Model.Users.OrderBy(u => u.DepartmentName)) // 🔹 Sortierung nach Abteilung
+                        {
+                            <tr>
+                                <td>@u.Vorname @u.Nachname</td>
+                                <td>@u.DepartmentName</td>
+                                <td>@u.Email</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="openEditPermissions('@u.UserId')">
+                                        ⚙️ Bearbeiten
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('@u.UserId', '@u.UserName')">
+                                        ❌ Löschen
+                                    </button>
+                                </td>
+
+
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Bestätigungsmodal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Benutzer löschen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteUserMessage">Soll der Benutzer wirklich gelöscht werden?</p>
+                <input type="hidden" id="deleteUserId" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">Ja, löschen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Edit Permissions Modal -->
+<div class="modal fade" id="editPermissionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Benutzerberechtigungen bearbeiten</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="UpdateUserAndPermissions">
+                <div class="modal-body">
+                    <!-- Hidden Inputs -->
+                    <input type="hidden" id="editUserId" name="UserId" />
+
+                    <!-- 🔹 Vor- und Nachname -->
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Vorname</label>
+                            <input type="text" class="form-control" id="editFirstName" name="FirstName" />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Nachname</label>
+                            <input type="text" class="form-control" id="editLastName" name="LastName" />
+                        </div>
+                    </div>
+
+                    <!-- 🔹 E-Mail -->
+                    <div class="mb-3">
+                        <label class="form-label">E-Mail</label>
+                        <input type="email" class="form-control" id="editUserEmail" name="Email" />
+                    </div>
+                    <button type="button" class="btn btn-danger" onclick="confirmResetPassword()">
+                        🔑 Passwort zurücksetzen
+                    </button>
+
+
+
+                    <!-- 🔹 Abteilung ändern -->
+                    <div class="mb-3">
+                        <label class="form-label">Abteilung</label>
+                        <select class="form-select text-dark" id="editUserDepartment" name="DepartmentId">
+                            @foreach (var dep in Model.Abteilungen)
+                            {
+                                <option value="@dep.Id">@dep.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- 🔹 Accordion für Ordner -->
+                    <div class="accordion" id="permissionsAccordion">
+                        <div class="accordion-item bg-dark border-secondary">
+                            <h2 class="accordion-header" id="headingFolders">
+                                <button class="accordion-button collapsed bg-dark text-white"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#collapseFolders"
+                                        aria-expanded="false"
+                                        aria-controls="collapseFolders"
+                                        style="cursor: pointer;">
+                                    📂 Ordner-Berechtigungen anzeigen / bearbeiten
+                                </button>
+                            </h2>
+                            <div id="collapseFolders" class="accordion-collapse collapse"
+                                 aria-labelledby="headingFolders" >
+                                <div class="accordion-body" id="editUserPermissions">
+                                    Lade Ordner...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Änderungen speichern ✅</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+
+<div class="modal fade" id="confirmResetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Passwort zurücksetzen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="resetPasswordMessage">Soll das Passwort für diesen Benutzer wirklich zurückgesetzt werden?</p>
+                <input type="hidden" id="resetUserId" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-danger" onclick="resetPassword()">Ja, zurücksetzen</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Neuen Benutzer anlegen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Vorname</label>
+                    <input type="text" class="form-control" id="FirstName" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Nachname</label>
+                    <input type="text" class="form-control" id="LastName" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" class="form-control" id="Email" required />
+                </div>
+                <div class="mb-3 position-relative">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" class="form-control pe-5" id="Password" required />
+                    <i class="bi bi-eye password-toggle" onclick="togglePassword('Password', this)"></i>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Passwort bestätigen</label>
+                    <input type="password" class="form-control" id="ConfirmPassword" required />
+                </div>
+
+                <!-- 🔒 Passwort generieren Button -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-warning" onclick="generatePassword()">🔒 Passwort generieren</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- Nur JS-Trigger -->
+                <button type="button" class="btn btn-success" onclick="openPermissionsModal()">Weiter ➡️</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal 2: Berechtigungen -->
+<!-- Modal 2: Berechtigungen -->
+<div class="modal fade" id="assignRoleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">Rolle & Berechtigungen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" asp-page-handler="CreateUserWithPermissions">
+                <div class="modal-body">
+                    <!-- Hidden Inputs für Userdaten -->
+                    <input type="hidden" name="FirstName" id="hiddenFirstName" />        
+                    <input type="hidden" name="LastName" id="hiddenLastName" />
+                    <input type="hidden" name="Email" id="hiddenEmail" />
+                    <input type="hidden" name="Password" id="hiddenPassword" />
+                    <input type="hidden" name="ConfirmPassword" id="hiddenConfirmPassword" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Abteilung</label>
+                        <select class="form-select text-dark" name="DepartmentId" id="departmentSelect">
+                            @foreach (var dep in Model.Abteilungen)
+                            {
+                                <option value="@dep.Id">@dep.Name</option>
+                            }
+                            <option value="new">➕ Neue Abteilung</option>
+                        </select>
+                    </div>
+
+
+                    <div class="mb-3 d-none" id="newDepartmentWrapper">
+                        <label class="form-label">Neue Abteilung</label>
+                        <input type="text" class="form-control" name="NewDepartment" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ordnerberechtigungen</label>
+                        <div id="firebaseFolders" class="border p-2 rounded bg-light text-dark">Lade...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Benutzer erstellen ✅</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="folderPermissionsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">📂 Ordner-Berechtigungen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="folderListContainer">
+                Lade Ordner...
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="folderUsersModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title">👥 Berechtigte Benutzer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="folderUsersContainer">
+                Lade Benutzer...
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 📊 Chart.js laden -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 📅 Balkendiagramm: Aktivitäten pro Tag
+    new Chart(document.getElementById('chart-aktivitaeten'), {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(chartLabelsTag),
+            datasets: [{
+                label: 'Aktivitäten pro Tag',
+                data: @Html.Raw(chartDataTag),
+                backgroundColor: '#1d4ed8' // Blau
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+
+    // 🧩 Tortendiagramm: Aktionen nach Typ
+    new Chart(document.getElementById('chart-aktionen-typ'), {
+        type: 'pie',
+        data: {
+            labels: @Html.Raw(chartLabelsTyp),
+            datasets: [{
+                data: @Html.Raw(chartDataTyp),
+                backgroundColor: [
+                    '#f87171', '#fb923c', '#facc15', '#34d399', '#60a5fa',
+                    '#a78bfa', '#f472b6', '#4ade80', '#fbbf24', '#38bdf8'
+                ]
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    // 👤 Balkendiagramm: Aktionen pro Benutzer
+    new Chart(document.getElementById('chart-aktionen-benutzer'), {
+        type: 'bar',
+        data: {
+            labels: @Html.Raw(chartLabelsUser),
+            datasets: [{
+                label: 'Anzahl der Aktionen',
+                data: @Html.Raw(chartDataUser),
+                backgroundColor: '#16a34a' // Grün
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
+        }
+    });
+
+    // ✅ Erfolgsbenachrichtigung nach 3 Sekunden ausblenden
+    setTimeout(() => {
+        const alertBox = document.querySelector('.alert');
+        if (alertBox) alertBox.style.display = 'none';
+    }, 3000);
+
+           function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector("i");
+
+      if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("bi-eye");
+        icon.classList.add("bi-eye-slash");
+      } else {
+        input.type = "password";
+        icon.classList.remove("bi-eye-slash");
+        icon.classList.add("bi-eye");
+      }
+    }
+
+        function generatePassword() {
+      fetch('/Dokument/DashboardAdmin?handler=GeneratePassword')
+        .then(res => res.text())
+        .then(pw => {
+          const pwField = document.getElementById("Password");
+          const confirmField = document.getElementById("ConfirmPassword");
+
+          pwField.value = pw;
+          confirmField.value = pw;
+          document.getElementById("GeneratedPassword").value = pw;
+
+          // Passwort sichtbar machen
+        
+        });
+        }
+             function sanitizeId(str) {
+        return String(str).replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+    // ===================================================
+    // User bearbeiten (EditPermissionsModal)
+    // ===================================================
+    async function openEditPermissions(userId) {
+        const userListModalEl = document.getElementById("userListModal");
+        const userListModal = bootstrap.Modal.getInstance(userListModalEl);
+
+        // Falls UserListModal noch offen → erst schließen, dann EditModal öffnen
+        if (userListModalEl.classList.contains("show")) {
+            return new Promise(resolve => {
+                userListModalEl.addEventListener("hidden.bs.modal", async () => {
+                    await actuallyOpenEditPermissions(userId);
+                    resolve();
+                }, { once: true });
+                userListModal.hide();
+            });
+        } else {
+            await actuallyOpenEditPermissions(userId);
+        }
+    }
+
+    async function actuallyOpenEditPermissions(userId) {
+        const res = await fetch(`/Dokument/DashboardAdmin?handler=UserPermissions&userId=${userId}`);
+        const data = await res.json();
+
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        // 📝 User-Daten füllen
+        document.getElementById("editUserId").value = data.id;
+        document.getElementById("editFirstName").value = data.vorname || "";
+        document.getElementById("editLastName").value = data.nachname || "";
+        document.getElementById("editUserEmail").value = data.email || "";
+
+        const depSelect = document.getElementById("editUserDepartment");
+        if (data.abteilungId) {
+            depSelect.value = data.abteilungId;
+        }
+
+        // 📂 Ordnerberechtigungen rendern
+        const container = document.getElementById("editUserPermissions");
+        container.innerHTML = "";
+
+        const normalize = str => (str || "")
+            .toLowerCase().trim()
+            .replace(/\u00A0/g, " ")
+            .replace(/\s+/g, " ")
+            .replace(/\/+/g, "/");
+
+        const normalizedPermissions = data.permissions.map(normalize);
+
+            data.folders.forEach(dep => {
+        const depId = `dep_${sanitizeId(dep.id)}`;
+        const depValue = dep.path + "/*";
+        const depChecked = normalizedPermissions.includes(normalize(depValue));
+
+        container.innerHTML += `
+          <div class="accordion-item bg-dark border-secondary">
+            <h2 class="accordion-header" id="heading_${depId}">
+              <div class="d-flex align-items-center">
+                <input class="form-check-input me-2 ms-3" type="checkbox"
+                       name="Permissions" value="${dep.path}/*"
+                       id="chk_${depId}" ${depChecked ? "checked" : ""}>
+                <button class="accordion-button collapsed bg-dark text-white flex-grow-1"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#collapse_${depId}"
+                        aria-expanded="false"
+                        aria-controls="collapse_${depId}"
+                        style="cursor: pointer;">
+                  📂 ${dep.name}
+                </button>
+              </div>
+            </h2>
+            <div id="collapse_${depId}" class="accordion-collapse collapse"
+                 aria-labelledby="heading_${depId}" data-bs-parent="#permissionsAccordion">
+              <div class="accordion-body" id="body_${depId}">
+              </div>
+            </div>
+          </div>
+        `;
+
+        const bodyContainer = document.getElementById(`body_${depId}`);
+        dep.categories.forEach(cat => {
+            const catId = `chk_${sanitizeId(dep.id)}_${sanitizeId(cat.name)}`;
+            const catChecked = normalizedPermissions.includes(normalize(cat.path));
+
+            bodyContainer.innerHTML += `
+              <div class="form-check ms-4">
+                <input class="form-check-input" type="checkbox"
+                       name="Permissions" value="${cat.path}"
+                       id="${catId}" ${catChecked ? "checked" : ""}>
+                <label class="form-check-label" for="${catId}">
+                  📁 ${cat.name}
+                </label>
+              </div>
+            `;
+        });
+    });
+
+
+        // Modal öffnen
+        const modalEl = document.getElementById("editPermissionsModal");
+        const modal = new bootstrap.Modal(modalEl, { focus: true });
+        modal.show();
+    }
+
+    // Backdrop beim Schließen aufräumen
+    document.getElementById("editPermissionsModal")
+        .addEventListener("hidden.bs.modal", () => {
+            document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
+            document.body.classList.remove("modal-open");
+            document.body.style = "";
+        });
+
+
+
+
+            async function loadFolders() {
+      const container = document.getElementById("firebaseFolders");
+      container.innerHTML = "Lade Ordner...";
+      try {
+        const res = await fetch("/Dokument/DashboardAdmin?handler=GetFolders");
+        const data = await res.json();
+
+        console.log("DEBUG data:", data); // 👈 zeigt dir was wirklich zurückkommt
+
+        if (!Array.isArray(data)) {
+          container.innerHTML = `<div class="text-danger">Fehler: Backend liefert kein Array</div>`;
+          return;
+        }
+
+        container.innerHTML = "";
+
+            data.forEach(dep => {
+      container.innerHTML += `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="Permissions" value="${dep.path}/*" id="chk_${dep.id}">
+          <label class="form-check-label fw-bold" for="chk_${dep.id}">📂 ${dep.name}</label>
+        </div>
+      `;
+
+      dep.categories.forEach(cat => {
+        container.innerHTML += `
+          <div class="form-check ms-4">
+            <input class="form-check-input" type="checkbox" name="Permissions" value="${cat.path}" id="chk_${dep.id}_${cat.name}">
+            <label class="form-check-label" for="chk_${dep.id}_${cat.name}">📁 ${cat.name}</label>
+          </div>
+        `;
+      });
+    });
+
+
+      } catch (err) {
+        container.innerHTML = `<div class="text-danger">Fehler: ${err.message}</div>`;
+      }
+    }
+               // Hilfsfunktion: sorgt für saubere IDs
+    function sanitizeId(str) {
+        return String(str).replace(/[^a-zA-Z0-9_-]/g, "_");
+    }
+
+
+
+
+
+                  async function openFolderPermissions(folderPath) {
+        const container = document.getElementById("folderUsersContainer");
+        container.innerHTML = "⏳ Lade Benutzer...";
+
+        const res = await fetch(`/Dokument/DashboardAdmin?handler=FolderPermissions&folderPath=${encodeURIComponent(folderPath)}`);
+        const users = await res.json();
+        
+        console.log("USERS:", users);
+        container.innerHTML = "";
+        if (!users || users.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-danger fw-bold py-3">
+                🚫 Keine Benutzer wurden für diesen Ordner berechtigt.
+            </div>
+        `;
+    } else {
+            users.forEach(u => {
+                const avatar = u.profilbildUrl && u.profilbildUrl.trim() !== ""
+    ? u.profilbildUrl
+    : "/images/default-profile.png";
+
+           container.innerHTML += `
+        <div class="d-flex align-items-center border-bottom py-2">
+            <img src="${avatar}"
+                 class="rounded-circle me-2"
+                 alt="Avatar"
+                 width="40" height="40"
+                 onerror="this.src='/images/default-avatar.png'">
+            <div>
+                <div><strong>${u.vorname} ${u.nachname}</strong></div>
+                <small class="text-secondary">Benutzername: ${u.userName}</small><br>
+                <small class="text-info">✅ Berechtigt von <b>${u.grantedBy}</b> am ${u.grantedAt}</small>
+            </div>
+        </div>
+    `;
+    });
+
+    }
+
+
+        // Ordnerliste-Modal ausblenden
+        const folderListModalEl = document.getElementById("folderPermissionsModal");
+        const folderListModal = bootstrap.Modal.getInstance(folderListModalEl);
+        folderListModal.hide();
+
+        // User-Modal anzeigen
+        const modalEl = document.getElementById("folderUsersModal");
+        const modal = new bootstrap.Modal(modalEl, { focus: false });
+        modal.show();
+
+        // Wenn User-Modal geschlossen wird → Ordnerliste wieder anzeigen
+        modalEl.addEventListener("hidden.bs.modal", () => {
+            folderListModal.show();
+        }, { once: true });
+    }
+
+
+        document.getElementById("departmentSelect").addEventListener("change", function () {
+        const selectedDepId = this.value; // ID der Abteilung
+        const checkboxes = document.querySelectorAll("#firebaseFolders input[type='checkbox']");
+
+        // Zuerst alle Häkchen entfernen
+        checkboxes.forEach(cb => cb.checked = false);
+
+        // Wenn eine Abteilung ausgewählt ist (nicht "new")
+        if (selectedDepId && selectedDepId !== "new") {
+            // Checkboxen durchgehen und prüfen, ob ID im value vorkommt
+            checkboxes.forEach(cb => {
+                if (cb.id.includes(selectedDepId)) {
+                    cb.checked = true;
+                }
+            });
+        }
+    });
+        function openPermissionsModal() {
+        // Daten aus CreateUserModal holen
+        const firstName = document.getElementById("FirstName").value;
+        const lastName = document.getElementById("LastName").value;
+        const email = document.getElementById("Email").value;
+        const password = document.getElementById("Password").value;
+        const confirmPassword = document.getElementById("ConfirmPassword").value;
+
+        // In Hidden Inputs schreiben (für assignRoleModal)
+        document.getElementById("hiddenFirstName").value = firstName;
+        document.getElementById("hiddenLastName").value = lastName;
+        document.getElementById("hiddenEmail").value = email;
+        document.getElementById("hiddenPassword").value = password;
+        document.getElementById("hiddenConfirmPassword").value = confirmPassword;
+
+        // Erstes Modal schließen
+        const createUserModalEl = document.getElementById("createUserModal");
+        const createUserModal = bootstrap.Modal.getInstance(createUserModalEl);
+        createUserModal.hide();
+
+        // Zweites Modal öffnen
+        const assignRoleModalEl = document.getElementById("assignRoleModal");
+        const assignRoleModal = new bootstrap.Modal(assignRoleModalEl, { focus: true });
+        assignRoleModal.show();
+
+        // Ordner laden
+        loadFolders();
+    }
+
+    async function loadFolderList() {
+        const container = document.getElementById("folderListContainer");
+        container.innerHTML = "⏳ Lade Ordner...";
+
+        try {
+            // Hier ALLE Ordner laden
+            const res = await fetch("/Dokument/DashboardAdmin?handler=GetFolders");
+            const data = await res.json();
+
+            console.log("DEBUG folders:", data);
+
+            if (!Array.isArray(data)) {
+                container.innerHTML = `<div class="text-danger">Fehler: Backend liefert kein Array</div>`;
+                return;
+            }
+
+            container.innerHTML = "";
+
+            data.forEach(dep => {
+                container.innerHTML += `
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <span>📂 ${dep.name}</span>
+                        <button class="btn btn-sm btn-info" onclick="openFolderPermissions('${dep.path}')">
+                            👀 Berechtigungen anzeigen
+                        </button>
+                    </div>
+                `;
+            });
+
+        } catch (err) {
+            container.innerHTML = `<div class="text-danger">❌ Fehler: ${err.message}</div>`;
+        }
+    }
+
+    // 👉 Ordner laden, wenn Modal geöffnet wird
+    document.getElementById("folderPermissionsModal")
+        .addEventListener("show.bs.modal", loadFolderList);
+        
+        document.getElementById("assignRoleModal")
+    .addEventListener("hidden.bs.modal", function () {
+        const createUserModalEl = document.getElementById("createUserModal");
+        const createUserModal = bootstrap.Modal.getInstance(createUserModalEl);
+
+        // Falls das Benutzer-Erstellen Modal noch im Hintergrund "offen" ist → schließen
+        if (createUserModal) {
+            createUserModal.hide();
+        }
+    });
+
+        document.getElementById("userSearch").addEventListener("keyup", function () {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll("#userTableBody tr");
+
+        rows.forEach(row => {
+            const name = row.cells[0].innerText.toLowerCase();
+            const abteilung = row.cells[1].innerText.toLowerCase();
+            const email = row.cells[2].innerText.toLowerCase();
+
+            if (name.includes(filter) || abteilung.includes(filter) || email.includes(filter)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    });
+
+           document.addEventListener("DOMContentLoaded", () => {
+        const btn = document.querySelector('[data-bs-target="#collapseFolders"]');
+        const target = document.getElementById("collapseFolders");
+        const bsCollapse = new bootstrap.Collapse(target, { toggle: false });
+
+        btn.addEventListener("click", () => {
+            bsCollapse.toggle();
+        });
+    });
+        function confirmDeleteUser(userId, userName) {
+        document.getElementById("deleteUserMessage").innerText =
+            `Soll der Benutzer "${userName}" wirklich gelöscht werden?`;
+        document.getElementById("deleteUserId").value = userId;
+
+        const userListModalEl = document.getElementById("userListModal");
+        const userListModal = bootstrap.Modal.getInstance(userListModalEl);
+
+        if (userListModalEl.classList.contains("show")) {
+            userListModalEl.addEventListener("hidden.bs.modal", () => {
+                const modalEl = document.getElementById("confirmDeleteModal");
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }, { once: true });
+            userListModal.hide();
+        } else {
+            const modalEl = document.getElementById("confirmDeleteModal");
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    }
+
+        async function deleteUser() {
+        const userId = document.getElementById("deleteUserId").value;
+
+        try {
+            const res = await fetch(`/Dokument/DashboardAdmin?handler=DeleteUser`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                alert(data.message);
+                await loadUserList();
+            } else {
+                alert("❌ Fehler: " + data.message);
+            }
+        } catch (err) {
+            alert("❌ Fehler beim Löschen: " + err.message);
+        }
+
+        // Modal schließen
+        const modalEl = document.getElementById("confirmDeleteModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        // Backdrop & Body-CSS bereinigen
+        document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
+        document.body.classList.remove("modal-open");
+        document.body.style = "";
+    }
+
+
+
+    // ===================================================
+    // Userliste neu laden
+    // ===================================================
+    async function loadUserList() {
+        const res = await fetch("/Dokument/DashboardAdmin?handler=GetUsers");
+        const users = await res.json();
+
+        const tbody = document.getElementById("userTableBody");
+        tbody.innerHTML = "";
+
+        users.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${u.vorname} ${u.nachname}</td>
+                    <td>${u.departmentName}</td>
+                    <td>${u.email}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="openEditPermissions('${u.userId}')">⚙️ Bearbeiten</button>
+                        <button class="btn btn-sm btn-danger" onclick="confirmDeleteUser('${u.userId}', '${u.userName}')">🗑️ Löschen</button>
+                    </td>
+                </tr>`;
+        });
+    }
+             function confirmResetPassword() {
+        const userId = document.getElementById("editUserId").value;
+        const userName = document.getElementById("editUserEmail").value; // oder Vorname+Nachname, wenn du willst
+
+        document.getElementById("resetPasswordMessage").innerText =
+            `Soll das Passwort für "${userName}" wirklich zurückgesetzt werden?`;
+        document.getElementById("resetUserId").value = userId;
+
+        const modalEl = document.getElementById("confirmResetPasswordModal");
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+
+    async function resetPassword() {
+        const userId = document.getElementById("resetUserId").value;
+        console.log("ResetPassword send userId=", userId); // DEBUG
+
+        try {
+            const res = await fetch(`/Dokument/DashboardAdmin?handler=ResetPassword`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                alert("✅ " + data.message);
+            } else {
+                alert("❌ Fehler: " + data.message);
+            }
+        } catch (err) {
+            alert("❌ Fehler beim Zurücksetzen: " + err.message);
+        }
+
+        // Modal schließen
+        const modalEl = document.getElementById("confirmResetPasswordModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+    }
+
+
+</script>
+<style>
+    .modern-btn {
+        background: linear-gradient(90deg, #2d8cff 70%, #30a4ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 0.8rem;
+        font-size: 1.09rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0.65em 2.3em;
+        min-width: 130px;
+        box-shadow: 0 2px 12px rgba(45,140,255,0.09), 0 0.5px 0.5px rgba(48,164,255,0.07);
+        cursor: pointer;
+        transition: background 0.18s, box-shadow 0.18s, transform 0.14s;
+        outline: none;
+        margin-right: 0.7rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+        .modern-btn:hover, .modern-btn:focus {
+            background: linear-gradient(90deg, #30a4ff 60%, #5ad6ff 100%);
+            box-shadow: 0 4px 20px 2px rgba(45,160,255,0.17);
+            transform: translateY(-2px) scale(1.04);
+            color: #fff;
+        }
+
+        .modern-btn.secondary {
+            background: rgba(255,255,255,0.05);
+            color: #aee1ff;
+            border: 1.5px solid #2d8cff;
+            box-shadow: none;
+            transition: background 0.18s, color 0.15s, border-color 0.14s;
+        }
+
+            .modern-btn.secondary:hover, .modern-btn.secondary:focus {
+                background: rgba(45,140,255,0.13);
+                color: #fff;
+                border-color: #30a4ff;
+                box-shadow: 0 2px 14px 0 rgba(45,160,255,0.10);
+            }
+
+    /* Platz im Input für das Auge */
+    /* Platz für das Icon im Input */
+    /* Platz im Input */
+    #Password {
+        padding-right: 2.5rem; /* Platz für das Icon */
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 0.9rem; /* Abstand vom rechten Rand */
+        top: 70%; /* Mitte vom Container */
+        transform: translateY(-45%); /* etwas weniger nach oben verschieben */
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #aaa;
+    }
+
+        .password-toggle:hover {
+            color: #fff;
+        }
+
+
+        .password-toggle:hover {
+            color: #fff;
+        }
+
+    #editUserPermissions .form-check-input {
+        margin-left: 1rem; /* Abstand vom Rand */
+    }
+
+    #permissionsAccordion .accordion-button {
+        pointer-events: auto !important;
+        cursor: pointer;
+    }
+
+
+
+    .permission-info {
+        color: #4ade80; /* hellgrün */
+        font-weight: 500;
+    }
+
+    img.rounded-circle {
+        object-fit: cover;
+        border: 2px solid #444;
+    }
+
+
+</style>

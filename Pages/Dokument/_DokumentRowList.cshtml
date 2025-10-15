@@ -1,0 +1,29 @@
+﻿@model IEnumerable<dynamic>
+
+@if (Model != null && Model.Any())
+{
+    <tr class="bg-secondary bg-opacity-10 text-info fw-bold">
+        <td colspan="7">📄 Gefilterte Dokumente</td>
+    </tr>
+
+    @foreach (var doc in Model)
+    {
+        if (doc is DmsProjeckt.Data.DmsFile file)
+        {
+            @await Html.PartialAsync("Dokument/_DokumentTableRow", file)
+        }
+        else if (doc is DmsProjeckt.Data.Dokumente dokument)
+        {
+            @await Html.PartialAsync("Dokument/_DokumentTableRow", dokument)
+        }
+    }
+
+}
+else
+{
+    <tr>
+        <td colspan="7" class="text-muted text-center py-3">
+            ⚠️ Keine Dokumente gefunden
+        </td>
+    </tr>
+}

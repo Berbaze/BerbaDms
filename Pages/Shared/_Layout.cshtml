@@ -1,0 +1,1263 @@
+﻿@using DmsProjeckt.Data
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@{
+    var currentUser = User.Identity.IsAuthenticated ? await UserManager.GetUserAsync(User) : null;
+    string userFullName = (!string.IsNullOrWhiteSpace(currentUser?.Vorname) || !string.IsNullOrWhiteSpace(currentUser?.Nachname))
+      ? $"{currentUser?.Vorname} {currentUser?.Nachname}".Trim()
+      : "Benutzer";
+    string userProfileImageUrl = !string.IsNullOrWhiteSpace(currentUser?.ProfilbildUrl)
+    ? currentUser.ProfilbildUrl
+    : "/images/default-profile.png";
+
+    var showSidebar = !(ViewData["HideSidebar"] as bool? ?? false);
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - DmsProjeckt</title>
+
+    <!-- CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/DmsProjeckt.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+    <!-- Bootstrap JS Bundle (inclut Dropdown, Modal, Popover, etc.) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            max-width: 260px;
+            background-color: #191c24;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.24);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 0;
+            position: fixed;
+            z-index: 1200;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            padding: 0 18px;
+            border-bottom: 1px solid #23272b;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4fd8ff;
+            text-transform: uppercase;
+            
+            letter-spacing: 1px;
+            margin: 0;
+            line-height: 1;
+        }
+
+        .sidebar-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            position: relative;
+        }
+
+        .notif-btn {
+            background: none !important;
+            border: none !important;
+            color: #4fd8ff !important;
+            font-size: 1.3em;
+            margin-right: 0.15rem;
+            padding: 0 6px;
+            display: flex;
+            align-items: center;
+            height: 36px;
+            position: relative;
+            z-index: 2;
+            transition: color 0.18s;
+        }
+
+            .notif-btn:hover {
+                color: #fff !important;
+            }
+
+        .sidebar-toggle-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 2px;
+            cursor: pointer;
+        }
+
+        .sidebar-hamburger {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 22px;
+            height: 18px;
+            gap: 3.5px;
+        }
+
+            .sidebar-hamburger span {
+                display: block;
+                height: 3px;
+                width: 100%;
+                background: #4fd8ff;
+                border-radius: 2px;
+                transition: 0.18s;
+            }
+
+        /* Sidebar Content = Scrollbar VERMEIDEN */
+        .sidebar-content {
+            flex: 1 1 auto;
+            padding: 1.2rem 1rem 0.2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            min-height: 0;
+            overflow: visible;
+            padding-bottom: 0;
+        }
+
+        /* Menu Sections */
+        .menu-section {
+            padding-top: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar .menu-section > h5 {
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            color: #4fd8ff !important;
+            text-transform: uppercase;
+            border-bottom: 1px solid #27313a;
+            padding-bottom: 0.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            font-size: 15px;
+            color: #d1d5db;
+            text-decoration: none;
+            border-radius: 7px;
+            transition: background 0.19s, color 0.15s;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+
+            .sidebar a i {
+                margin-right: 10px;
+                min-width: 22px;
+                text-align: center;
+                font-size: 1.16em;
+            }
+
+            .sidebar a:hover,
+            .sidebar a.active {
+                background-color: #263241;
+                color: #4fd8ff;
+            }
+
+        /* --- Dropdown Menü (Immer geschlossen bis .open) --- */
+        .menu-dropdown {
+            display: none;
+            flex-direction: column;
+            padding-left: 16px;
+            gap: 1px;
+        }
+
+            .menu-dropdown.open {
+                display: flex !important;
+            }
+
+            .menu-dropdown a {
+                font-size: 14px;
+                color: #b8eafd;
+                padding: 7px 10px;
+                background: none;
+                border-radius: 5px;
+            }
+
+                .menu-dropdown a:hover {
+                    color: #fff;
+                    background: #223142;
+                }
+
+        .menu-dropdown-toggle {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 7px;
+            color: #d1d5db;
+            font-weight: 500;
+            font-size: 15px;
+            background: none;
+            border: none;
+            transition: background 0.18s, color 0.13s;
+        }
+
+            .menu-dropdown-toggle:hover {
+                background: #233141;
+                color: #4fd8ff;
+            }
+
+            .menu-dropdown-toggle i.arrow {
+                margin-left: auto;
+                font-size: 1.13em;
+                transition: transform 0.2s;
+            }
+
+            .menu-dropdown-toggle.open i.arrow {
+                transform: rotate(90deg);
+            }
+
+        /* Sidebar User Bereich immer ganz unten */
+        .sidebar-user-dropdown {
+            margin: 1.1rem 0 0 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            margin-top: auto !important;
+            
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.95rem;
+            cursor: pointer;
+            width: 100%;
+            padding: 8px 14px;
+            border-radius: 8px;
+            transition: background 0.15s;
+            position: relative;
+            background: none;
+        }
+
+            .user-info:hover,
+            .sidebar-user-dropdown.open .user-info {
+                background: #212b36;
+            }
+
+        .sidebar-profile-pic {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #282c37;
+            border: 2px solid #26313a;
+        }
+
+        .sidebar-user-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.08rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 110px;
+        }
+
+        .dropdown-caret {
+            margin-left: auto;
+            font-size: 1.19em;
+            color: #4fd8ff;
+            transition: transform 0.19s;
+        }
+
+        .sidebar-user-dropdown.open .dropdown-caret {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown-menu {
+            position: absolute;
+            bottom: 54px;
+            left: 0;
+            min-width: 192px;
+            background: #22232a;
+            border-radius: 13px;
+            box-shadow: 0 -4px 18px rgba(0,0,0,0.21);
+            display: none;
+            flex-direction: column;
+            padding: 9px 0;
+            z-index: 1000;
+            border: 1px solid #30333e;
+            animation: slideUp .18s cubic-bezier(.45,1.42,.66,.96);
+        }
+
+        .sidebar-user-dropdown.open .user-dropdown-menu {
+            display: flex !important;
+        }
+
+        .user-dropdown-menu a {
+            padding: 9px 22px;
+            color: #4fd8ff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 15px;
+            transition: background 0.15s, color 0.13s;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+            .user-dropdown-menu a:hover {
+                background: #1b232b;
+                color: #fff;
+            }
+
+        /* Sidebar Collapsed Styles */
+        .sidebar-collapsed .sidebar {
+            width: 48px !important;
+            min-width: 48px !important;
+            max-width: 48px !important;
+            padding: 0;
+        }
+
+        .sidebar-collapsed .sidebar-header {
+            justify-content: flex-end;
+            padding: 0 3px 0 0;
+            border-bottom: none;
+        }
+
+        .sidebar-collapsed .sidebar-title,
+        .sidebar-collapsed .notif-btn,
+        .sidebar-collapsed .notification-dropdown,
+        .sidebar-collapsed .sidebar-content {
+            display: none !important;
+        }
+
+        .sidebar-collapsed .sidebar-toggle-btn {
+            display: flex !important;
+            margin: 0 auto;
+            width: 36px;
+            height: 36px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .sidebar-collapsed .sidebar-hamburger span {
+            width: 18px;
+            height: 2.5px;
+        }
+
+        /* Kleine Feinheiten */
+        .favoriten-placeholder {
+            background: transparent;
+            border-radius: 6px;
+        }
+
+        /* Drop Animation */
+        /* Notification Dropdown */
+        .notification-dropdown {
+            display: none; /* JS steuert Anzeige via .open */
+            position: absolute;
+            top: 100%; /* Direkt UNTER der Glocke */
+            left: 0; /* ANFANG bei Glocke */
+            right: auto;
+            transform: none;
+            margin-top: 8px;
+            width: 350px;
+            min-height: 180px;
+            max-height: 500px;
+            background: #15191f;
+            color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 1.5px 4px #10e6ff44;
+            overflow: hidden;
+            z-index: 3000 !important;
+            flex-direction: column;
+            padding: 0;
+        }
+
+            .notification-dropdown.open {
+                display: flex !important;
+            }
+
+        /* User Dropdown */
+        .sidebar-user-dropdown .user-dropdown-menu {
+            display: none;
+            position: absolute;
+            left: 0;
+            min-width: 192px;
+            background: #22232a;
+            border-radius: 13px;
+            box-shadow: 0 -4px 18px rgba(0,0,0,0.21);
+            flex-direction: column;
+            padding: 9px 0;
+            z-index: 1000;
+            border: 1px solid #30333e;
+            animation: slideUp .18s cubic-bezier(.45,1.42,.66,.96);
+            bottom: 54px;
+        }
+
+        .sidebar-user-dropdown.open .user-dropdown-menu {
+            display: flex !important;
+        }
+
+        .notif-btn {
+            position: relative;
+            /* ...dein sonstiges notif-btn styling... */
+        }
+
+        #notifBadge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.73em;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            padding: 0 5px;
+            border-radius: 10px;
+            z-index: 2;
+            display: none;
+        }
+
+        /* Notification Dropdown kompakt */
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 340px;
+            min-height: 100px;
+            max-height: 430px;
+            background: #15191f;
+            color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 6px 24px rgba(16,230,255,0.12), 0 1.5px 8px #0002;
+            overflow: hidden;
+            z-index: 3000 !important;
+            flex-direction: column;
+            padding: 0;
+            font-family: 'Montserrat',sans-serif;
+            border: 1px solid #212c35;
+        }
+
+            .notification-dropdown.open {
+                display: flex !important;
+            }
+
+        /* Header kompakter, kleinere Font */
+        .dropdown-header.sticky-dropdown-header {
+            background: #161d23;
+            padding: 13px 16px 10px 20px;
+            border-bottom: 1px solid #232c37;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 1.09rem;
+            letter-spacing: 0.01em;
+            min-height: unset;
+        }
+
+            .dropdown-header.sticky-dropdown-header span {
+                color: #fff;
+                font-weight: 700;
+                font-size: 1.09rem;
+                letter-spacing: 0.01em;
+            }
+
+        /* Buttons: Settings & Check kleiner und kompakt */
+        .dropdown-header .btn-link,
+        .dropdown-header .settings-icon {
+            color: #11caf6 !important;
+            background: none !important;
+            border: none !important;
+            font-size: 1.15em;
+            margin-left: 2px;
+            transition: color 0.14s;
+            padding: 2px 6px 2px 6px;
+            box-shadow: none;
+        }
+
+            .dropdown-header .btn-link:hover,
+            .dropdown-header .settings-icon:hover {
+                color: #fff !important;
+            }
+
+        /* List Padding kleiner */
+        .notif-list {
+            flex: 1;
+            overflow-x: hidden;
+            overflow-y: auto;
+            padding: 10px 6px 10px 8px;
+            background: transparent;
+        }
+
+        /* Notification-Card KOMPAKT, Border-Accent wie im Bild */
+        .notif-item, .dropdown-item {
+            background: #1b2029;
+            border-radius: 12px;
+            padding: 11px 18px 9px 15px;
+            margin-bottom: 12px;
+            font-size: 0.97rem;
+            box-shadow: 0 1.5px 6px #13e6ff09;
+            color: #fff;
+            border-left: 2.5px solid #10e6ff;
+            transition: background 0.16s;
+            display: block;
+            word-break: break-word;
+            max-width: 100%;
+        }
+
+            .notif-item:last-child, .dropdown-item:last-child {
+                margin-bottom: 0;
+            }
+
+            .notif-item.unread,
+            .dropdown-item.fw-bold {
+                background: #202937;
+                border-left: 2.5px solid #10e6ff;
+                font-weight: 600;
+            }
+
+            .notif-item time, .dropdown-item time {
+                color: #11caf6;
+                font-size: 0.87em;
+                margin-top: 4px;
+                display: block;
+                font-family: 'Montserrat',sans-serif;
+                opacity: 0.84;
+            }
+
+            /* Button 'Als gelesen markieren' sehr klein und cyan */
+            .dropdown-item button,
+            .notif-item button {
+                background: none;
+                color: #10e6ff;
+                border: none;
+                font-size: 0.87em;
+                margin-top: 4px;
+                padding: 0 2px;
+            }
+
+                .dropdown-item button:hover,
+                .notif-item button:hover {
+                    color: #fff;
+                    text-decoration: underline;
+                }
+
+        /* Links im Dropdown */
+        .dropdown-header .btn-link,
+        .dropdown-header .settings-icon {
+            color: #11caf6 !important;
+            background: none !important;
+            border: none !important;
+            font-size: 1em; /* Noch kleiner! */
+            width: 28px; /* Sehr klein, quadratisch */
+            height: 28px;
+            min-width: 0;
+            min-height: 0;
+            padding: 0;
+            margin-left: 1px;
+            margin-right: 1px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            box-shadow: none;
+            transition: color 0.14s, background 0.14s;
+            line-height: 1;
+        }
+
+            .dropdown-header .btn-link:hover,
+            .dropdown-header .settings-icon:hover {
+                color: #fff !important;
+                background: #0f1921;
+            }
+
+        .dropdown-header .bi {
+            font-size: 1.13em; /* Auch das Icon selbst noch etwas kleiner */
+            vertical-align: middle;
+        }
+
+        .sidebar,
+        
+        .sidebar .sidebar-content,
+        .sidebar .menu-section,
+        .sidebar .menu-section > h5,
+        .sidebar a,
+        .sidebar a i,
+        .sidebar .sidebar-user-name,
+        .sidebar .user-info,
+        .sidebar .user-dropdown-menu a {
+            font-size: 14px !important; /* Oder z.B. 15px oder 0.95em – taste dich ran! */
+            /* Kein line-height nötig, da padding/margin das regelt */
+        }
+        /* Für kleine Screens */
+        .content-area {
+            margin-left: 260px;
+            transition: margin-left 0.2s cubic-bezier(.44,1.2,.67,1.01);
+        }
+
+        .sidebar-collapsed .sidebar-user-dropdown {
+            display: none !important;
+        }
+
+        
+
+        .sidebar-collapsed .content-area {
+            margin-left: 48px; /* Gleich wie die schmale Sidebar! */
+        }
+
+        .notif-item, .dropdown-item {
+            background: #1b2029;
+            border-radius: 12px;
+            padding: 11px 18px 9px 15px;
+            margin-bottom: 12px;
+            font-size: 0.97rem;
+            box-shadow: 0 1.5px 6px #13e6ff09;
+            color: #fff;
+            border-left: 2.5px solid #10e6ff;
+            transition: background 0.16s;
+            display: flex;
+            flex-direction: column; /* ⬅️ Mehrzeiliges Layout */
+            word-wrap: break-word; /* ⬅️ Lange Wörter umbrechen */
+            overflow-wrap: break-word;
+            white-space: normal; /* ⬅️ Kein erzwungener Einzeiler */
+            max-width: 100%;
+        }
+
+            .dropdown-item div,
+            .notif-item div {
+                white-space: normal;
+                word-break: break-word;
+            }
+
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+<body class="bg-dark text-light d-flex flex-column min-vh-100">
+
+    <!-- 🔝 HEADER -->
+
+
+    <div class="main-layout d-flex flex-grow-1" id="layout">
+        <!-- 📋 Sidebar -->
+        @if(showSidebar)
+        {
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">DMS</div>
+                <div class="sidebar-actions" style="position: relative;">
+                    <!-- Notification-Bell -->
+                    <button id="notificationBtn" class="notif-btn" title="Benachrichtigungen" type="button">
+                        <i class="bi bi-bell"></i>
+                        <span id="notifBadge" class="badge bg-danger" style="display:none;">0</span>
+
+                    </button>
+                    <div id="notificationDropdown" class="notification-dropdown">
+                        <div class="dropdown-header sticky-dropdown-header d-flex justify-content-between align-items-center">
+                            <span>Benachrichtigungen</span>
+                            <div>
+                                <button id="markAllReadBtn" class="btn btn-link btn-sm" title="Alle als gelesen markieren">
+                                    <i class="bi bi-check2-all"></i>
+                                </button>
+                                <button id="notifSettings" class="btn btn-link btn-sm" title="Benachrichtigungseinstellungen">
+                                    <i class="bi bi-gear settings-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="notifList" class="notif-list">
+                            <!-- Beispiel-Content -->
+                        </div>
+                    </div>
+                    <!-- Hamburger-Toggle-Button -->
+                    <button class="sidebar-toggle-btn" id="sidebarToggle" title="Sidebar ein-/ausklappen">
+                        <span class="sidebar-hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                    </button>
+                </div>
+                <!-- Notification Dropdown -->
+
+            </div>
+
+            <div class="sidebar-content">
+                <div class="menu-section">
+                    <a href="/Dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a>
+                </div>
+                <div class="menu-section">
+                    <h5><i class="fas fa-star"></i> Favoriten</h5>
+                    <div id="favoriten-widgets">
+                        @for (int i = 0; i < 5; i++)
+                        {
+                            <div class="favoriten-placeholder" style="height: 38px;"></div>
+                        }
+                    </div>
+                </div>
+
+                <div class="menu-section">
+                    <h5><i class="fas fa-link"></i> Zuletzt besucht</h5>
+                    <div id="recent-pages">
+                        @for (int i = 0; i < 3; i++)
+                        {
+                            <div class="favoriten-placeholder" style="height: 38px;"></div>
+                        }
+                    </div>
+                </div>
+                <div class="menu-section">
+                    <h5><i class="fas fa-cogs me-2"></i> Verwaltung</h5>
+                    <a href="/Chat/Chat"><i class="fas fa-tools"></i> Nachrichten</a>
+                    
+                    
+                    <!-- Sidebar User-Widget -->
+                    
+                </div>
+            </div>
+            <div class="sidebar-user-dropdown" id="sidebarUserDropdown">
+                        <div class="user-info" id="sidebarUserInfo">
+                            <img src="@(userProfileImageUrl ?? "/images/default-profile.png")" alt="Profilbild" class="sidebar-profile-pic" />
+                            <span class="sidebar-user-name">@userFullName</span>
+                            <i class="bi bi-chevron-up dropdown-caret"></i>
+                        </div>
+                        <div class="user-dropdown-menu" id="sidebarDropdownMenu">
+                            <a href="/Einstellungen#profil"><i class="bi bi-person-circle me-2"></i> Mein Konto</a>
+                            <a href="/Einstellungen"><i class="fas fa-cog"></i> Einstellungen</a>
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <a href="/Identity/Account/Login"><i class="bi bi-box-arrow-right me-2"></i> Logout</a>
+                            }
+                            else
+                            {
+                                <a href="/Identity/Account/Login"><i class="bi bi-box-arrow-in-right me-2"></i> Login</a>
+                            }
+                        </div>
+                    </div>
+                    
+        </div>
+        }
+        <!-- Contenu principal -->
+        <div class="content-area flex-grow-1 px-4 py-3 @(showSidebar ? "" : "no-sidebar")">
+            @RenderBody()
+        </div>
+
+    </div>
+
+
+
+    <!-- 🔄 CONTENU PRINCIPAL -->
+    
+
+    <!-- 🔚 FOOTER COLLÉ EN BAS -->
+    <!-- 📦 JS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+
+</body>
+</html>
+<script>
+              document.addEventListener("DOMContentLoaded", function () {
+        const notifBtn = document.getElementById('notificationBtn');
+        const notifDropdown = document.getElementById('notificationDropdown');
+        const notifBadge = document.getElementById('notifBadge');
+        const notifList = document.getElementById('notifList');
+        const markAllReadBtn = document.getElementById('markAllReadBtn');
+        const notifsSettingsBtn = document.getElementById('notifSettings');
+
+        // 👉 Nur ausführen, wenn die Elemente wirklich existieren
+        if (notifBtn && notifDropdown && notifList && notifBadge) {
+
+            notifBtn.addEventListener('click', function (e) {
+                console.log('Klick auf die Glocke');
+                notifDropdown.classList.toggle('open');
+                if (notifDropdown.classList.contains('open')) loadNotifications();
+                e.stopPropagation();
+            });
+
+            if (notifsSettingsBtn) {
+                notifsSettingsBtn.addEventListener('click', function () {
+                    window.location.href = '/Einstellungen#benachrichtigung';
+                });
+            }
+
+            // Klick außerhalb schließt Dropdown
+            document.addEventListener('click', function () {
+                notifDropdown.classList.remove('open');
+            });
+
+            notifDropdown.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // Notifications laden & anzeigen
+            window.loadNotifications = async function () {
+                notifList.innerHTML = '<div class="text-center p-2">Loading...</div>';
+                try {
+                    const res = await fetch('/Notifications/GetUserNotifications');
+                    const notifs = await res.json();
+                    notifList.innerHTML = '';
+                    let unreadCount = 0;
+
+                    notifs.forEach(n => {
+                        if (!n.isRead) unreadCount++;
+                        let url = mapNotifToUrl(n);
+
+                        notifList.innerHTML += `
+                            <div class="dropdown-item${n.isRead ? '' : ' fw-bold'}"
+                                 style="cursor:pointer"
+                                 onclick="handleNotifClick(${n.id}, '${url}')">
+                                <div>${n.title}</div>
+                                <div style="font-size:small;">${n.content}</div>
+                                <div style="font-size:x-small;color:gray;">${n.receivedAt}</div>
+                                <button onclick="event.stopPropagation(); markAsRead(${n.id})"
+                                        class="btn btn-sm btn-link">
+                                    ${n.isRead ? '' : 'Als gelesen markieren'}
+                                </button>
+                            </div>
+                        `;
+                    });
+
+                    notifBadge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
+                    notifBadge.innerText = unreadCount;
+                } catch (err) {
+                    notifList.innerHTML = '<div class="text-center text-danger p-2">Fehler beim Laden</div>';
+                }
+            };
+
+            window.markAsRead = async function (id) {
+                await fetch(`/Notifications/MarkAsRead/${id}`, { method: 'POST' });
+                loadNotifications();
+            };
+
+            window.markAllAsRead = async function () {
+                await fetch('/Notifications/MarkAllAsRead', { method: 'POST' });
+                loadNotifications();
+            };
+
+            if (markAllReadBtn) {
+                markAllReadBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    markAllAsRead();
+                });
+            }
+
+            window.handleNotifClick = function (id, url) {
+                // Optional: Als gelesen markieren, dann weiterleiten
+                fetch(`/Notifications/MarkAsRead/${id}`, { method: 'POST' })
+                    .finally(() => window.location.href = url);
+            };
+
+            // Optional: Badge sofort laden
+            loadNotifications();
+        }
+    });
+
+    function mapNotifToUrl(n) {
+        if(n.actionLink) return n.actionLink;
+        console.log("actionlink", n.actionLink);
+        
+    }
+            // 1. Favoriten laden (wie oben)
+       document.addEventListener('DOMContentLoaded', function () {
+
+        // ------------------------------
+        // 1. Favoriten laden
+        // ------------------------------
+        fetch('/Dashboard/GetFavoriten')
+    .then(res => res.json())
+    .then(favs => {
+        const container = document.getElementById('favoriten-widgets');
+        if (!container) return;
+
+        const maxFavoriten = 5;
+        container.innerHTML = ""; // alte Platzhalter entfernen
+
+        favs.slice(0, maxFavoriten).forEach(fav => {
+            const link = document.createElement('a');
+            link.href = fav.actionLink || `/Widget/${fav.id}`;
+            link.className = "favoriten-link";
+            link.innerHTML = `<span class="sidebar-icon" style="font-size: 1.2em;">${fav.icon}</span>
+                              <span>${fav.title}</span>`;
+            container.appendChild(link);
+        });
+
+        // Auffüllen mit Platzhaltern
+        for (let i = favs.length; i < maxFavoriten; i++) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'favoriten-placeholder';
+            placeholder.style.height = '38px';
+            container.appendChild(placeholder);
+        }
+    })
+    .catch(err => {
+        console.error("Fehler beim Laden der Favoriten:", err);
+    });
+
+
+
+        // ------------------------------
+        // 2. Letzte Seiten merken
+        // ------------------------------
+        const current = window.location.pathname + window.location.search;
+
+        function normalizePage(path) {
+            if (path.startsWith("/Workflows")) return "/Workflows/Index";
+            if (path.startsWith("/Notiz")) return "/Notiz";
+            if (path.startsWith("/Tests/UploadMulti")) return "/Tests/UploadMulti";
+            if (path.startsWith("/Pdf/EditOne")) return "/Pdf/EditOne";
+            if(path.startsWith("/Dokument?SelectedFolder")) return "/Dokument/Index";
+            return path;
+        }
+
+        const normalized = normalizePage(current);
+
+        if (normalized !== '/Dashboard'
+            && normalized !== '/Identity/Account/AccessDenied'
+            && !normalized.startsWith('/Identity')
+            && !normalized.startsWith('/Dokument/Bearbeiten')
+            && !normalized.startsWith('/Willkommen')) {
+
+            let history = JSON.parse(localStorage.getItem('recentPages') || '[]');
+
+            // Seite am Anfang einfügen, Duplikate entfernen
+            history = history.filter(p => p !== normalized);
+            history.unshift(normalized);
+
+            // Maximal 10 merken
+            history = history.slice(0, 10);
+
+            localStorage.setItem('recentPages', JSON.stringify(history));
+        }
+
+
+        // ------------------------------
+        // 3. Schnellzugriff (Zuletzt besucht)
+        // ------------------------------
+        const maxRecent = 3;
+        const recent = JSON.parse(localStorage.getItem('recentPages') || '[]');
+        const recentContainer = document.getElementById('recent-pages');
+
+        if (recentContainer) {
+            recent.slice(0, maxRecent).forEach((page, idx) => {
+                let title = page;
+                if (page.includes('/Dokument/Index')) title = "Dokumentenverwaltung";
+                else if (page.startsWith('/Tests/UploadMulti')) title = "Upload";
+                else if (page.startsWith('/Pdf/Edit')) title = "PDF signieren";
+                else if (page.includes('/Logs/Audit')) title = "Audit-Protokolle";
+                else if (page.includes('/Dokument/DashboardAdmin')) title = "Admindashboard";
+                else if (page.includes('/Dokument/Suchen')) title = "Suchen";
+                else if (page.includes('/Chat/Chat')) title = "Chat";
+                else if (page.includes('/Einstellungen')) title = "Einstellungen";
+                else if (page.includes('/Dokument/Version')) title = "Versionen";
+                else if (page.includes('/Dokument/Index?typ=archiviert')) title = "Archiv";
+                else if (page.includes('/Tests/Aufgaben')) title = "Aufgaben";
+                else if (page.startsWith('/Notiz')) title = "Notizen";
+                else if (page.includes('/Admin/CreateUser')) title = "Benutzer erstellen";
+                else if (page.includes('/Admin/MeinBenutzer')) title = "Benutzer verwalten";
+                else if (page.includes('/Favoriten')) title = "Favoriten";
+                else if (page.includes('/Dokument/AlleVersionen')) title = "Versionen";
+                else if (page.includes('/GeteilteDokumente')) title = "Geteilte Inhalte";
+                else if (page.includes('/AuditLog')) title = "Zuletzt bearbeitet";
+                else if (page.startsWith('/Workflows')) title = "Workflows";
+                else if (page.includes('/Signieren')) title = "Signieren";
+                else if (page.includes('/Dokument/ScanDokument')) title = "Scannen";
+
+                const link = document.createElement('a');
+                link.href = page;
+                link.style.display = 'flex';
+                link.style.alignItems = 'center';
+                link.style.gap = '8px';
+                link.style.textDecoration = 'none';
+                link.style.color = 'inherit';
+                link.innerHTML = `<span>${title}</span>`;
+
+                if (recentContainer.children[idx]) {
+                    recentContainer.replaceChild(link, recentContainer.children[idx]);
+                } else {
+                    recentContainer.appendChild(link);
+                }
+            });
+
+            // Platzhalter für leere Slots
+            const displayed = recent.slice(0, maxRecent).length;
+            for (let i = displayed; i < maxRecent; i++) {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'favoriten-placeholder';
+                placeholder.style.height = '38px';
+                recentContainer.appendChild(placeholder);
+            }
+        }
+    });
+
+
+
+
+    const widgetActionMap = {
+        workflow:      { type: "redirect", url: "/Workflows/Index" },
+    versionen:     { type: "redirect", url: "/Tests/Versionierung" },
+    archiv:        { type: "redirect", url: "/Tests/Archiv" },
+    aufgaben:      { type: "redirect", url: "/Tests/Aufgaben" },
+    ablage:        { type: "redirect", url: "/Tests/Verwalten" },
+    import:        { type: "redirect", url: "/Tests/UploadTest" },
+    zuletzt:       { type: "redirect", url: "/AuditLog" },
+    notizen:       { type: "redirect",   url: "/Notiz" }
+    }
+           document.addEventListener("DOMContentLoaded", function () {
+        const sidebarToggle = document.getElementById("sidebarToggle");
+        const layout = document.getElementById("layout");
+
+        if (sidebarToggle && layout) {
+            sidebarToggle.addEventListener("click", function () {
+                layout.classList.toggle("sidebar-collapsed");
+                // Optional: Icon ändern, je nach Status
+            });
+        }
+    });
+
+        function handleWidgetActionById(widgetId) {
+        const action = widgetActionMap[widgetId];
+        if (!action) {
+            // Fallback: Gehe zum Dashboard-Widget
+            window.location.href = `/Dashboard#${widgetId}`;
+            return;
+        }
+        if (action.type === "redirect" && action.url) {
+            window.location.href = action.url;
+        } else if (action.type === "custom" && action.func && typeof window[action.func] === "function") {
+            window[action.func]();
+        }
+    }
+    function deleteNote(id) {
+            if(!confirm("Diese Notiz wirklich löschen?")) return;
+
+            fetch(`/Dashboard/DeleteNotiz/${id}`, {
+                method: "DELETE"
+            })
+            .then(res => {
+                if(!res.ok) throw new Error("Löschen fehlgeschlagen");
+                openAllNotes();
+            })
+            .catch(err => {
+                alert("Fehler beim Löschen: " + err.message)
+            });
+        }
+
+        function openAllNotes() {
+            fetch("/Dashboard/AlleNotizen")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById("note-full-list");
+                tbody.innerHTML = data.map(n => `
+                <tr ondblclick="openEditPopup('${n.id}')">
+                <td>${n.title}</td>
+                <td>${n.datum}</td>
+                <td style="vertical-align: middle; text-align: center;">
+                    <button class="delete-note" onclick="deleteNote('${n.id}')">🗑️</button>
+                </td>
+                </tr>
+                `).join('');
+                document.getElementById("note-full-popup").style.display = "flex";
+            })
+            .catch (err => {
+                alert("Fehler beim Laden aller Notizen: " + err.message);
+            });
+        }
+
+        function closeFullNotePopup() {
+            document.getElementById("note-full-popup").style.display = "none";
+        }
+        function openNotePopup() {
+            document.getElementById("note-id").value = "";
+            document.getElementById("note-title").value = "";
+            document.getElementById("note-content").value = "";
+            document.getElementById("note-modal-title").textContent = "Neue Notiz erstellen";
+            document.getElementById("note-popup").style.display = "flex";
+        }
+
+        function closeNotePopup() {
+            document.getElementById("note-popup").style.display = "none";
+            reloadNotesTable();
+        }
+
+                      function openEditPopup(id) {
+            fetch(`/Dashboard/Notiz/${id}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Notiz nicht gefunden");
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById("note-id").value = data.id;
+                    document.getElementById("note-title").value = data.title;
+                    document.getElementById("note-content").value = data.content;
+                    document.getElementById("note-modal-title").textContent = "Notiz bearbeiten";
+                    document.getElementById("note-popup").style.display = "flex";
+                })
+                .catch(err => {
+                    alert("Fehler beim Laden der Notiz: " + err.message);
+                });
+        }
+
+
+
+        function submitNote() {
+            const id = document.getElementById("note-id").value;
+            const title = document.getElementById("note-title").value.trim();
+            const content = document.getElementById("note-content").value.trim();
+
+            if(!title || !content) {
+                alert("Bitte Titel und Inhalt ausfüllen");
+                return;
+            }
+
+            const url = id ? "/Dashboard/Update" : "/Dashboard/Erstellen"
+
+            const payload = { title, content };
+            if(id) payload.id = parseInt(id);
+
+                    fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(async res => {
+            if (!res.ok) throw new Error("Fehler beim Speichern");
+
+            const contentType = res.headers.get("Content-Type");
+            if (contentType && contentType.includes("application/json")) {
+                return res.json();
+            }
+
+            return {}; // Leere Antwort fallback
+        })
+               .then(data => {
+            alert("Notiz gespeichert");
+            closeNotePopup();
+            const notesPopup = document.getElementById("note-full-popup");
+            if (notesPopup && (notesPopup.style.display === "flex" || notesPopup.style.display === "block")) {
+                openAllNotes();
+            } else {
+                reloadNotesTable();
+            }
+        })
+        .catch(err => {
+            console.error("Fehler beim Speichern:", err);
+            alert("Fehler: " + err.message);
+        });
+
+        }
+
+        function reloadNotesTable() {
+            fetch("/Dashboard/Letzte" )
+                .then(res => res.json())
+                .then(data => {
+                    const notesWidget = [...document.querySelectorAll('.grid-stack-item')]
+                        .find(w => w.dataset.id === "notizen");
+                    if(!notesWidget) return;
+
+                    const table =notesWidget.querySelector("table");
+                    if(!table) return;
+
+                    const tbody = table.querySelector("tbody");
+                    if(!tbody) return;
+
+                    tbody.innerHTML = data.map(n => `
+                    <tr ondblclick="openEditPopup('${n.id}')">
+                        <td style="word-wrap: break-word;">${n.title}</td>
+                        <td>${n.datum}</td>
+                        <td></td>
+                    </tr>
+                    `).join('');
+
+                    table.style.display = "table";
+                })
+                .catch(err => {
+                    console.error("Fehler beim Nachladen der Notizen:", err);
+                });
+
+        }
+
+        function toggleSidebar() {
+            document.getElementById("layout").classList.toggle("sidebar-collapsed");
+        }
+              document.addEventListener("DOMContentLoaded", function () {
+        const userDropdown = document.getElementById('sidebarUserDropdown');
+        const userInfo = document.getElementById('sidebarUserInfo');
+        let dropdownTimeout = null;
+
+        // Nur ausführen, wenn Sidebar-Elemente existieren
+        if (userDropdown && userInfo) {
+
+            // Öffnen bei Mouseenter (auf User Info)
+            userInfo.addEventListener('mouseenter', function () {
+                clearTimeout(dropdownTimeout);
+                userDropdown.classList.add('open');
+            });
+
+            // Wenn man das gesamte Widget verlässt, langsam schließen
+            userDropdown.addEventListener('mouseleave', function () {
+                dropdownTimeout = setTimeout(() => {
+                    userDropdown.classList.remove('open');
+                }, 180); // 180ms Verzögerung – genug Zeit für Nutzer, um ins Menü zu gehen
+            });
+
+            // Wenn man ins Dropdown-Menü zurückgeht, offen lassen
+            userDropdown.addEventListener('mouseenter', function () {
+                clearTimeout(dropdownTimeout);
+                userDropdown.classList.add('open');
+            });
+
+            // Optional: Klick außerhalb schließt
+            document.addEventListener('click', function (e) {
+                if (!userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove('open');
+                }
+            });
+        }
+    });
+
+
+</script>
+
+
+
+
+
+

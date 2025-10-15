@@ -1,0 +1,3021 @@
+﻿@page "/Dashboard"
+@model IndexModel
+@{
+    ViewData["Title"] = "Mein Dashboard";
+}
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+
+
+
+<link href="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack.min.css" rel="stylesheet" />
+
+
+
+<div class="dashboard-header mt-4">
+    <h2>Mein Dashboard</h2>
+    <div class="dashboard-actions"> 
+        <button id="add-button" onclick="openPopup()" style="display: none;" disabled>➕ Widget hinzufügen</button>
+        <button id="save-button" onclick="saveLayout()" style="display: none;">💾 Layout speichern</button>
+        <button id="edit-layout-button" onclick="toggleEditMode()">🛠️ Layout bearbeiten</button>
+    </div>
+</div>
+
+<div class="grid-stack"></div>
+
+<div id="widget-popup" class="popup-overlay" style="display: none">
+    <div class="popup-content widget-popup">
+        <div class="popup-header">
+            <h3>Widget auswählen</h3>
+        </div>
+        <div class="popup-widget-list" id="widget-popup-list"></div>
+        <div class="popup-footer">
+            <button id="add-selected-widgets" disabled>Hinzufügen</button>
+            <button onclick="closePopup()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<div id="upload-overlay" class="upload-overlay" style="display: none">
+    <div class="upload-box">
+        📤 Datei wird hochgeladen…
+    </div>
+</div>
+
+<div id="note-popup" class="popup-overlay" style="display: none;">
+    <div class="popup-content">
+        <h3 id="note-modal-title">Neue Notiz erstellen</h3>
+        <input type="hidden" id="note-id" />
+        <input id="note-title" placeholder="Titel" style="width: 100%; margin-bottom: 10px;" />
+        <textarea id="note-content" placeholder="Inhalt" rows="4" style="width: 100%;"></textarea>
+        <br />
+        <button onclick="submitNote()">Speichern</button>
+        <button onclick="closeNotePopup()">Abbrechen</button>
+    </div>
+</div>
+
+<div id="note-full-popup" class="popup-overlay" style="display: none;">
+    <div class="popup-content" style="max-height: 500px; overflow-y: auto">
+        <h3>Alle Notizen</h3>
+        <table style="width: 100%; font-size: 13px; vertical-align: middle;">
+            <thead>
+                <tr>
+                    <th style="width:40%">Titel</th>
+                    <th style="width:50%">Geändert am</th>
+                    <th class="note-action-header">
+                        <div>
+                            <button class="note-add-btn" onclick="openNotePopup()" title="Neue Notiz">
+                                <span>➕</span>
+                            </button>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="note-full-list">
+            </tbody>
+        </table>
+        <br />
+        <button onclick="closeFullNotePopup()">Schließen</button>
+    </div>
+</div>
+
+
+<style>
+
+
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .grid-stack {
+        background: transparent;
+        margin-top: 20px;
+        height: 800px !important; 
+        min-height: 480px;
+        max-height: none !important;
+        overflow: hidden;
+        row-gap: 10px;
+    }
+
+    .grid-stack-item-content.unified-widget {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        justify-content: flex-start;
+    }
+
+    .upload-area {
+        width: 100%;
+        flex-grow: 1;
+        margin-top: 12px;
+        padding: 20px;
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        text-align: center;
+        color: #007bff;
+        background: #f8f9fa;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-area.hidden {
+            display: none !important;
+        }
+
+    .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 4000;
+    }
+
+    .popup-content {
+        background: white;
+        padding: 20px 30px;
+        border-radius: 10px;
+        min-width: 450px;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+        .popup-content li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .popup-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+
+        .popup-content li:hover {
+            background: #d0d0d0;
+        }
+
+    .custom-file-upload {
+        display: inline-block;
+        padding: 10px 15px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+        .custom-file-upload:hover {
+            background-color: #0056b3;
+        }
+
+        .custom-file-upload input[type="file"] {
+            display: none;
+        }
+
+    .upload-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    }
+
+    .upload-box {
+        padding: 20px 40px;
+        background: #077bff;
+        color: white;
+        font-size: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .drop-zone {
+        border: 2px dashed;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        color: #007bff;
+        transition: background-color 0.2s;
+    }
+
+        .drop-zone:hover {
+            background: #e6f0ff;
+        }
+
+    .widget-icon {
+        font-size: 26px;
+        color: #007bff;
+        flex-shrink: 0;
+    }
+
+    .widget-text-group {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .widget-title-text {
+        font-weight: bold;
+        font-size: 16px;
+        margin-bottom: 0;
+    }
+
+    .widget-subtitle {
+        font-size: 12px;
+        color: #666;
+        line-height: 1.2;
+        margin-top: 0;
+    }
+
+
+    .grid-stack-item-content {
+        overflow: hidden !important;
+    }
+
+    .widget-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .widget-close {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background-color: #ff4d4f;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+        line-height: 24px;
+        text-align: center;
+        cursor: pointer;
+        display: none; /* 🛠️ Nur im Edit-Modus sichtbar */
+        z-index: 10;
+    }
+
+        .widget-close:hover {
+            background-color: #e60000;
+        }
+
+
+    .grid-stack-item {
+        position: relative; /* WICHTIG für den .widget-close Button */
+    }
+
+        .grid-stack-item.focused {
+            z-index: 1000 !important; /* über alles andere */
+        }
+
+
+    .unified-widget {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+    }
+
+    .note-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 10px;
+        margin-bottom: 6px;
+        font-size: 12px;
+    }
+
+    .note-add-btn {
+        background: none !important;
+        border: none;
+        font-size: 14px;
+        cursor: pointer;
+        color: #7c3aed;
+        transition: transform 0.2s ease;
+        margin-left: 6px;
+        vertical-align: middle !important; /* <-- wichtig */
+        padding: 0;
+        line-height: 1;
+    }
+
+
+        
+
+    .notes-scroll-wrapper {
+        overflow-y: auto;
+        flex-grow: 1;
+        width: 100%;
+    }
+
+    .delete-note {
+        background-color: #ff4d4f;
+        border: none;
+        color: white;
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+        .delete-note:hover {
+            background-color: #d9363e;
+        }
+
+    #note-full-popup {
+        z-index: 1000;
+    }
+
+    #note-popup {
+        z-index: 1100; /* <- höher als note-full-popup */
+    }
+
+    /* 🎨 Anpassung für Widgets im Dark Mode */
+
+    .grid-stack-item-content.unified-widget {
+        background: #f5f5f5; /* Heller Hintergrund bleibt */
+        color: #111; /* Lesbarer Text */
+    }
+
+        .grid-stack-item-content.unified-widget .widget-title-text,
+        .grid-stack-item-content.unified-widget .widget-subtitle {
+            color: #111 !important; /* Forciert gute Lesbarkeit */
+        }
+
+        .grid-stack-item-content.unified-widget .widget-icon {
+            color: #007bff !important; /* Blaue Icons */
+        }
+
+        /* Tabellenzellen und Inhalte */
+        .grid-stack-item-content.unified-widget table,
+        .grid-stack-item-content.unified-widget td,
+        .grid-stack-item-content.unified-widget th {
+            color: #111 !important;
+        }
+
+    /* 🔄 Close-Button bleibt sichtbar */
+    .widget-close {
+        background-color: #ff4d4f;
+        color: white;
+    }
+
+        .widget-close:hover {
+            background-color: #d9363e;
+        }
+
+    /* ✅ Widget-Auswahl-Overlay */
+    .popup-overlay {
+        background-color: rgba(0, 0, 0, 0.75); /* dunkler, nicht milchig */
+    }
+
+    .popup-content {
+        background: #1e1e1e; /* dunkles Panel */
+        color: #fff;
+        padding: 24px 30px;
+        border-radius: 12px;
+        min-width: 400px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        font-family: 'Inter', sans-serif;
+        z-index:5000;
+    }
+
+        .popup-content h3 {
+            color: #90caf9;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .popup-content ul li {
+            background: #2c2c2c;
+            color: #f0f0f0;
+            font-weight: 600;
+            border-radius: 8px;
+            margin: 8px 0;
+            padding: 12px 16px;
+            transition: background 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+
+            .popup-content ul li:hover {
+                background: #3c3c3c;
+                color: #fff;
+            }
+
+        .popup-content button {
+            margin-top: 1rem;
+            background-color: #90caf9;
+            color: #121212;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+            .popup-content button:hover {
+                background-color: #64b5f6;
+            }
+
+    /* ✅ Action Buttons (oben rechts: Hinzufügen, Speichern etc.) */
+    .dashboard-actions button {
+        background-color: #2c2c2c;
+        color: #f1f1f1;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 16px;
+        border: 1px solid #444;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+        .dashboard-actions button:hover {
+            background-color: #3c3c3c;
+            border-color: #90caf9;
+            color: #ffffff;
+        }
+
+        /* Optional: Icon-Schatten für bessere Sichtbarkeit */
+        .dashboard-actions button svg,
+        .dashboard-actions button
+
+        #note-popup .popup-content {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 24px 32px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+            color: #f0f0f0;
+            width: 100%;
+            max-width: 480px;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+        }
+
+    #note-popup .popup-content h3 {
+        font-size: 1.5rem;
+        color: #90caf9;
+        margin-bottom: 20px;
+    }
+
+    #note-popup input,
+    #note-popup textarea {
+        background: #121212;
+        border: 1px solid #90caf9;
+        color: #f1f1f1;
+        border-radius: 6px;
+        padding: 10px 14px;
+        font-size: 1rem;
+        width: 100%;
+        box-sizing: border-box;
+        margin-bottom: 12px;
+        font-family: 'Inter', sans-serif;
+    }
+
+        #note-popup input::placeholder,
+        #note-popup textarea::placeholder {
+            color: #777;
+        }
+
+    #note-popup button {
+        padding: 10px 18px;
+        margin: 6px;
+        font-weight: bold;
+        font-size: 1rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+        #note-popup button:first-of-type {
+            background-color: #42a5f5;
+            color: #fff;
+        }
+
+            #note-popup button:first-of-type:hover
+
+            .dashboard-header {
+                margin-top: 2rem; /* Erzeugt vertikalen Abstand zur Navbar */
+                margin-bottom: 1rem;
+            }
+
+    /* Nur im Notizen-Modal-Table die Delete-Buttons */
+    #note-full-list .delete-note,
+    #note-full-popup .delete-note {
+        background-color: #ff4d4f !important;
+        color: #fff !important;
+        border: none !important;
+        padding: 6px 16px !important;
+        font-size: 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        vertical-align: middle;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+        margin: 0;
+        line-height: 1.1;
+        box-shadow: none;
+    }
+
+        #note-full-list .delete-note:hover,
+        #note-full-popup .delete-note:hover {
+            background-color: #d9363e !important;
+        }
+
+    /* Für die letzte Headerzelle mit dem Button */
+    th.note-action-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: 36px; /* Höhe kann an die Tabellenzelle angepasst werden */
+        background: none;
+        border: none;
+        vertical-align: middle; /* Wichtig! */
+        padding: 0 !important;
+    }
+
+    /* Alle Headerzellen mittig ausrichten */
+    #note-full-popup th {
+        vertical-align: middle;
+        height: 40px; /* Passt die Höhe an, ggf. anpassen */
+        padding: 0 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+        /* Speziell für die Zelle mit dem Button: Flexbox sorgt für vertikale Zentrierung */
+        #note-full-popup th.note-action-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            height: 40px; /* Wie oben, damit exakt gleich hoch */
+            padding-right: 8px; /* Etwas Abstand rechts */
+            box-sizing: border-box;
+        }
+
+    /* Button größer & exakt mittig */
+    #note-full-popup .note-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+        margin: 0;
+        padding: 0;
+        border-radius: 8px;
+        background: none;
+        color: #90caf9;
+        border: none;
+        transition: background 0.15s;
+    }
+
+        #note-full-popup .note-add-btn:hover {
+            background: #222b;
+            color: #fff;
+        }
+
+
+    /* Optional: Der Button mittig und größer */
+    .note-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        min-height: 32px;
+        font-size: 14px;
+        margin: 0;
+        padding: 0;
+        border-radius: 6px;
+    }
+
+    #note-full-popup th.note-action-header,
+    #note-full-popup td:last-child {
+        /* selbe Höhe & Flexbox, damit alles fluchtet */
+        display: flex;
+        align-items: center;
+        justify-content: center; /* oder flex-end, je nach Ausrichtung */
+        height: 44px; /* identisch in th & td */
+        padding: 0;
+    }
+
+    /* Die Icon-Buttons: gleiche Größe, gleiche Ausrichtung */
+    #note-full-popup .note-add-btn,
+    #note-full-popup .delete-note {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        margin: 0 auto;
+        font-size: 14px; /* Icons identisch groß */
+        border-radius: 8px;
+    }
+
+    /* Optional: Trash-Button anpassen, falls nötig */
+    #note-full-popup .delete-note {
+        background-color: #ff4d4f !important;
+        color: #fff !important;
+        border: none !important;
+        box-shadow: none;
+    }
+
+
+    .widget-fav-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        z-index: 12;
+        padding: 2px;
+        cursor: pointer;
+        transition: right 0.2s;
+    }
+
+    /* Im Edit-Mode etwas nach links, z.B. 40px Abstand zum rechten Rand */
+    .edit-mode .widget-fav-btn {
+        right: 40px !important;
+    }
+
+    .fav-heart {
+        width: 24px;
+        height: 24px;
+        stroke: #FFD600 !important;
+        fill: none;
+        transition: fill 0.2s, stroke 0.2s;
+        filter: drop-shadow(0 0 3px #FFD60066);
+        /* evtl. ergänzen: */
+        display: inline-block;
+    }
+
+        .fav-heart.favorited {
+            fill: #FFD600 !important;
+            stroke: #FFD600 !important;
+        }
+
+    #shared-docs-list {
+        max-height: 205px; /* Passe das an die tatsächliche Widget-Höhe an */
+        overflow-y: auto;
+        padding-bottom: 10px; /* Verhindert abgeschnittene letzte Zeile */
+        scroll-snap-type: y mandatory;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+
+    .fav-list-item {
+        min-height: 60px; /* Gleiche Höhe wie oben */
+        scroll-snap-align: start;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+       /* Genug Höhe für Inhalt + Abstand */
+        box-sizing: border-box;
+    }
+
+    .tab-btn {
+        padding: 2px 7px;
+        border-radius: 4px;
+        border: 1px solid #bbb;
+        background: #fff;
+        font-weight: 400;
+        font-size: 10.5px;
+        cursor: pointer;
+        color: #333;
+        margin-right: 2px;
+        margin-bottom: 0;
+        box-shadow: none;
+        outline: none;
+    }
+
+        .tab-btn.active
+        {
+            background-color: #263241;
+            color: #4fd8ff;
+        }
+
+    #shared-switch-buttons {
+        display: flex;
+        gap: 2px;
+        margin-bottom: 2px; /* Abstand zu den Dokumenten, vorher 8px */
+    }
+
+    .edit-mode .widget-fav-btn {
+        right: 48px !important; /* oder z.B. 44px, je nach Größe deines Remove-Buttons */
+    }
+
+    .edit-mode .widget-close {
+        display: flex !important;
+    }
+
+    .popup-widget-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        max-height: 430px;
+        overflow-y: auto;
+        padding: 8px 2px 20px 2px;
+        margin-bottom: 12px;
+    }
+
+    .widget-popup-content {
+        min-width: 900px;
+        min-height: 540px;
+        max-width: 1080px;
+        padding: 30px 28px 18px 28px;
+        background: #222;
+        border-radius: 20px;
+        box-shadow: 0 10px 60px #000a;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .widget-popup-header h3 {
+        color: #74caff;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        text-align: left;
+    }
+
+    .widget-popup-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px 18px;
+        max-height: 410px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding-right: 8px;
+    }
+
+    .widget-card {
+        position: relative;
+        background: #f6f6f6;
+        border-radius: 14px;
+        box-shadow: 0 2px 9px #0012;
+        padding: 20px 20px 18px 20px;
+        min-height: 110px;
+        transition: box-shadow 0.2s, border 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        outline: none;
+        border: 2px solid transparent;
+    }
+
+        .widget-card.selected {
+            border: 2px solid #007bff;
+            box-shadow: 0 4px 18px #10e6ff33;
+        }
+
+        .widget-card:hover {
+            box-shadow: 0 6px 24px #007bff44;
+            border: 2px solid #74caff;
+        }
+
+        .widget-card .checkbox-area {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .widget-card input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: #37b5ff;
+            cursor: pointer;
+        }
+
+        .widget-card .card-icon {
+            font-size: 2.2rem;
+            display: inline-block;
+            margin-bottom: 6px;
+            margin-right: 7px;
+            color: #2ac2f4;
+        }
+
+        .widget-card .card-title {
+            font-size: 1.22rem;
+            font-weight: 700;
+            color: #21242a;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .widget-card .card-desc {
+            font-size: 1.03rem;
+            color: #111b;
+            margin-top: 4px;
+            line-height: 1.28;
+            text-align: left;
+        }
+
+    .widget-popup-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        margin-top: 8px;
+    }
+
+    .add-widgets-btn {
+        background: #74caff;
+        color: #122;
+        font-weight: 600;
+        border: none;
+        border-radius: 7px;
+        padding: 10px 23px;
+        font-size: 1.07rem;
+        transition: background 0.17s;
+        cursor: pointer;
+    }
+
+        .add-widgets-btn:disabled {
+            background: #bfd9e9;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+    .close-btn {
+        background: #222;
+        color: #fff;
+        border: 1px solid #666;
+        border-radius: 7px;
+        padding: 10px 23px;
+        font-size: 1.07rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+        .close-btn:hover {
+            background: #2c323a;
+        }
+
+    
+
+    .popup-content.widget-popup {
+        max-width: 750px;
+        min-width: 0;
+        width: 94vw;
+        padding: 24px 24px 14px 24px;
+        border-radius: 14px;
+        margin: 0 auto;
+    }
+
+    .popup-widget-list {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 13px 10px;
+        max-height: 340px;
+        overflow-y: auto;
+        padding: 0 2px 12px 2px;
+        margin-bottom: 10px;
+    }
+
+    .widget-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 7px #0002;
+        padding: 11px 13px 8px 13px;
+        min-height: 56px;
+        font-size: 0.97rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .widget-card {
+        font-size: 0.84rem !important;
+        min-height: 40px !important;
+        padding: 7px 10px 7px 10px !important;
+    }
+
+    .card-title {
+        font-size: 0.97rem !important;
+        font-weight: 600 !important;
+        margin-bottom: 0 !important;
+        line-height: 1.13 !important;
+    }
+
+    .card-desc {
+        font-size: 0.83rem !important;
+        color: #333 !important;
+        margin-top: 1px !important;
+        line-height: 1.23 !important;
+    }
+
+    .card-icon {
+        font-size: 1.1rem !important;
+        margin-right: 4px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .popup-widget-list {
+        gap: 12px 9px;
+    }
+
+    .widget-card input[type="checkbox"] {
+        width: 14px !important;
+        height: 14px !important;
+        accent-color: #90caf9; /* gleiche Farbe wie dein Button, falls gewünscht */
+        transform: scale(0.78);
+        margin-top: 1px !important;
+        margin-right: 1px !important;
+    }
+
+    /* ==============================
+       Widgets im Sidebar-Style
+       ============================== */
+
+    .grid-stack-item-content.unified-widget {
+        background: #191c24; /* Dark Hintergrund wie Sidebar */
+        border-radius: 14px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden !important; /* Scrollbar aus */
+        justify-content: flex-start;
+        color: #f1f1f1; /* Helle Schrift */
+        font-family: 'Montserrat', sans-serif;
+    }
+
+        /* Titel */
+        .grid-stack-item-content.unified-widget .widget-title-text {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 0;
+            color: #4fd8ff; /* Cyan Akzent */
+        }
+
+        /* Untertitel */
+        .grid-stack-item-content.unified-widget .widget-subtitle {
+            font-size: 12px;
+            color: #d1d5db;
+            line-height: 1.2;
+            margin-top: 0;
+        }
+
+        /* Icon */
+        .grid-stack-item-content.unified-widget .widget-icon {
+            font-size: 26px;
+            color: #4fd8ff; /* Cyan */
+            flex-shrink: 0;
+        }
+
+    /* ==============================
+       Favoriten-Button (Herz)
+       ============================== */
+
+    .widget-fav-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        z-index: 12;
+        padding: 2px;
+        cursor: pointer;
+        transition: right 0.2s;
+    }
+
+    .fav-heart {
+        width: 24px;
+        height: 24px;
+        stroke: #FFD600 !important;
+        fill: none;
+        transition: fill 0.2s, stroke 0.2s;
+        filter: drop-shadow(0 0 3px #FFD60066);
+    }
+
+        .fav-heart.favorited {
+            fill: #FFD600 !important;
+            stroke: #FFD600 !important;
+        }
+
+    /* ==============================
+       Buttons (z.B. Tabs, Upload)
+       ============================== */
+
+    .upload-area {
+        width: 100%;
+        flex-grow: 1;
+        margin-top: 12px;
+        padding: 20px;
+        border: 2px dashed #4fd8ff;
+        border-radius: 10px;
+        text-align: center;
+        color: #4fd8ff;
+        background: #212b36;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .upload-area:hover {
+            background: #263241;
+        }
+
+    /* Tabs / Switch-Buttons */
+    .tab-btn {
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #27313a;
+        background: #191c24;
+        font-size: 11px;
+        cursor: pointer;
+        color: #d1d5db;
+        transition: background 0.2s, color 0.2s;
+    }
+
+        .tab-btn.active {
+            background-color: #263241;
+            color: #4fd8ff;
+        }
+
+    /* ==============================
+       Dashboard Header + Actions
+       ============================== */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .dashboard-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+        .dashboard-actions button {
+            background-color: #191c24;
+            color: #4fd8ff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 10px 16px;
+            border: 1px solid #27313a;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+            cursor: pointer;
+        }
+
+            .dashboard-actions button:hover {
+                background-color: #263241;
+                border-color: #4fd8ff;
+                color: #ffffff;
+            }
+
+    /* ==============================
+       Grid + Widgets
+       ============================== */
+    .grid-stack {
+        background: transparent;
+        margin-top: 20px;
+        height: 800px !important;
+        min-height: 480px;
+        max-height: none !important;
+        overflow: hidden;
+        row-gap: 10px;
+    }
+
+    .grid-stack-item-content.unified-widget {
+        background: #191c24;
+        border-radius: 14px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden !important;
+        justify-content: flex-start;
+        color: #4fd8ff; /* Standard-Textfarbe jetzt Cyan */
+        font-family: 'Montserrat', sans-serif;
+    }
+
+        /* Titel */
+        .grid-stack-item-content.unified-widget .widget-title-text {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 0;
+            color: #4fd8ff; /* Titel Cyan */
+        }
+
+        /* Untertitel */
+        .grid-stack-item-content.unified-widget .widget-subtitle {
+            font-size: 12px;
+            color: #a0b9c8; /* leicht hellgrau-blau für Sekundärtext */
+            line-height: 1.2;
+            margin-top: 0;
+        }
+
+        /* Icon */
+        .grid-stack-item-content.unified-widget .widget-icon {
+            font-size: 26px;
+            color: #4fd8ff;
+            flex-shrink: 0;
+        }
+
+    /* ==============================
+       Favoriten-Button (Herz)
+       ============================== */
+    .widget-fav-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        z-index: 12;
+        padding: 2px;
+        cursor: pointer;
+        transition: right 0.2s;
+    }
+
+    .fav-heart {
+        width: 24px;
+        height: 24px;
+        stroke: #FFD600 !important;
+        fill: none;
+        transition: fill 0.2s, stroke 0.2s;
+        filter: drop-shadow(0 0 3px #FFD60066);
+    }
+
+        .fav-heart.favorited {
+            fill: #FFD600 !important;
+            stroke: #FFD600 !important;
+        }
+
+    /* ==============================
+       Upload Area
+       ============================== */
+    .upload-area {
+        width: 100%;
+        flex-grow: 1;
+        margin-top: 12px;
+        padding: 20px;
+        border: 2px dashed #4fd8ff;
+        border-radius: 10px;
+        text-align: center;
+        color: #4fd8ff;
+        background: #212b36;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+        .upload-area:hover {
+            background: #263241;
+        }
+
+    /* ==============================
+       Tabs / Switch-Buttons
+              ============================== */
+    .tab-btn {
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: 1px solid #27313a;
+        background: #191c24;
+        font-size: 11px;
+        cursor: pointer;
+        color: #d1d5db;
+        transition: background 0.2s, color 0.2s;
+    }
+
+        .tab-btn.active {
+            background-color: #263241;
+            color: #4fd8ff;
+        }
+
+    .grid-stack-item-content.unified-widget {
+        color: #e4e8ef !important; /* statt #4fd8ff → helles Grau-Blau, sehr lesbar */
+    }
+
+        .grid-stack-item-content.unified-widget .widget-title-text {
+            color: #4fd8ff !important; /* Titel bleibt Cyan als Akzent */
+        }
+
+        .grid-stack-item-content.unified-widget .widget-subtitle {
+            color: #b5c0cc !important; /* etwas helleres Grau für Sekundärtext */
+        }
+
+</style>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@9.2.2/dist/gridstack-all.js"></script>
+    <script>
+   
+
+        let grid;
+        let availableWidgets  = [];
+        let activeWidgetIds = new Set();
+        let isEditMode = false;
+        let aufgabenData = {};
+
+                const aufgabenRowMap = {
+            2: 0,
+            3: 2,
+            4: 5,
+            5: 8
+        };
+                function getMaxVisibleRows(widget) {
+            const node = widget.gridstackNode || GridStack.getNode(widget); // fallback falls kein gridstackNode
+            if (!node) return 0;
+            const h = node.h;
+            const w = node.w;
+
+            // Mappings nur für 2–5
+            let baseRows = aufgabenRowMap[h] || 0;
+            if (w === 3 && baseRows > 0) baseRows += 1;
+            return baseRows;
+        }
+
+         function updateAufgabenWidget(widget, aufgaben) {
+            if (!aufgaben || !Array.isArray(aufgaben) || aufgaben.length === 0) {
+                renderAufgabenTable(widget, [], 0);
+                return;
+            }
+            const rows = getMaxVisibleRows(widget);
+            renderAufgabenTable(widget, aufgaben, rows);
+        }
+                function renderAufgabenTable(widget, aufgaben, maxVisibleRows) {
+            let table = widget.querySelector("table");
+            const tbody = table.querySelector("tbody");
+            tbody.innerHTML = "";
+
+            if (maxVisibleRows < 1) {
+                table.style.display = "none";
+                return;
+            }
+
+            table.style.display = "table";
+            const visible = aufgaben.slice(0, maxVisibleRows);
+            tbody.innerHTML = visible.map(a => `
+                <tr>
+                    <td>${a.titel}</td>
+                    <td>${a.faelligBis ? new Date(a.faelligBis).toLocaleDateString() : "-"}</td>
+                    <td style="text-align: right;">
+                        ${["🔴", "🟠", "🟡", "🟢", "🔵"][a.prioritaet - 1]}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+
+
+                fetch("Dashboard/GetAvailable", {
+            method: "GET",
+            credentials: "include"
+        })
+        .then(async res => {
+            const contentType = res.headers.get("Content-Type");
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`Fehler vom Server (${res.status}): ${errorText}`);
+            }
+
+            if (!contentType || !contentType.includes("application/json")) {
+                const html = await res.text();
+                throw new Error("Server hat kein JSON zurückgegeben:\n" + html.slice(0, 200));
+            }
+
+            return res.json();
+        })
+        .then(data => {
+            console.log("Widgets vom Server:", data);
+            availableWidgets = data;
+            document.getElementById("add-button").disabled = false;
+        })
+        .catch(err => {
+            console.error("❌ Fehler beim Laden der Widgets:", err.message);
+        });
+               
+        window.addEventListener('load', () => {
+            console.log("Gridstack initialisiert...");
+
+                    grid = GridStack.init({
+          float: true,
+          removable: '.trash',
+          removeTimeout: 100,
+          acceptWidgets: true,
+          disableOneColumnMode: true,
+          cellHeight: 60,
+          minRow: 11,
+          maxRow: 13,
+          margin: 5,
+         
+          resizable: {
+              handles: 'se'
+          }
+          // KEIN locked, KEIN noResize
+        });
+                grid.on('resize', (event, el) => {
+            updateWidgetContent(el);
+                 const rows = getMaxVisibleRows(el);
+        console.log("Visible Rows nach Resize:", rows, el.offsetHeight);
+        });
+        // Nach dem Resizen nochmal „finalisieren“
+        grid.on('resizestop', (event, el) => {
+            updateWidgetContent(el);
+            
+        });
+
+
+
+                      document.addEventListener('click', function (e) {
+            const widget = e.target.closest('.grid-stack-item');
+         
+            document.querySelectorAll('.grid-stack-item').forEach(item => item.classList.remove('focused'));
+            if (widget) {
+                widget.classList.add('focused');
+            }
+        });
+
+     
+
+
+
+
+            fetch("Dashboard/Load")
+            .then(async res  => {
+                if(!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`Fehler beim Laden: ${errText}`);
+                }
+                return res.json();
+            })
+            .then(widgets => {
+                if(!Array.isArray(widgets)) {
+                    throw new Error("Antwort ist kein Array");
+                }
+                widgets.forEach(w => {
+                    renderWidget(w.id, w.title, w.w, w.h, w.x, w.y, w.locked, w.icon, w.beschreibung, w.favorit);
+                });
+            })
+
+            .catch(err => {
+                console.error("Fehler beim Laden der Widgets:", err.Message);
+            });
+        });
+
+        function enforceLockedState() {
+            grid.engine.nodes.forEach(node => {
+                const el = node.el;
+                const locked = !isEditMode;
+                grid.update(el, {
+                    locked: locked,
+                    noMove: locked,
+                    noResize: locked
+                });
+            });
+        }
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            document.body.classList.toggle('edit-mode', isEditMode);
+
+            console.log(isEditMode);
+            document.getElementById("add-button").style.display = isEditMode ? "inline-block" : "none";
+            document.getElementById('save-button').style.display = isEditMode ? "inline-block" : "none";
+
+                 document.querySelectorAll(".widget-close").forEach(btn => {
+            btn.style.display = isEditMode ? "inline-block" : "none";
+        });
+            
+
+            document.getElementById("edit-layout-button").textContent = isEditMode ?  "✅ Bearbeiten beenden" : "🛠️ Layout bearbeiten";
+                    Object.keys(GridStack.prototype).forEach(k => {
+          if (k.startsWith('on')) return;
+          try {
+            grid.on(k, (...args) => console.log("GridStack event:", k, args));
+          } catch(e){}
+        });
+
+            enforceLockedState();
+        }
+
+        function saveLayout() {
+            const layout = grid.engine.nodes.map(node => {
+                const id = node.el.dataset?.id;
+                if(!id) {
+                    console.warn("Widget ohne data-id gefunden -> wird NICHT gesendet");
+                    return null;
+                }
+                return {
+                    id,
+                    x: node.x,
+                    y: node.y,
+                    w: node.w,
+                    h: node.h,
+                    locked: node.locked ?? false,
+                    favorit: node.favorit ?? false
+                };
+            }).filter(w => w.id !== "null");
+
+            if(layout.length === 0) {
+                console.warn("Kein gültiges Layout zum Speichern.");
+                return;
+            }
+
+            console.log("JSON an Server:", JSON.stringify(layout, null, 2));
+
+            fetch("/Dashboard/SaveLayout", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(layout)
+            })
+            .then(async res => {
+                if(!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Fehler beim Speichern (${res.status}): ${errorText}`);
+                }
+                console.log("Layout gespeichert");
+            })
+            .catch(err => {
+                console.error("Fehler beim Speichern: ", err);
+            });
+        }
+
+               let selectedWidgetIds = new Set();
+
+                function openPopup() {
+            const list = document.getElementById("widget-popup-list");
+            list.innerHTML = "";
+            selectedWidgetIds.clear();
+            isSelectMode = false; // Immer false beim Start
+
+            // Button initial ausblenden & deaktivieren!
+            const addBtn = document.getElementById("add-selected-widgets");
+            addBtn.style.display = "none";
+            addBtn.disabled = true;
+
+            availableWidgets.forEach(widget => {
+                if (!activeWidgetIds.has(widget.id)) {
+                    const card = document.createElement("div");
+                    card.className = "widget-card";
+                    card.tabIndex = 0;
+                    card.dataset.widgetId = widget.id;
+
+                    card.innerHTML = `
+                        <div class="card-title">
+                          <span class="card-icon">${widget.icon ?? ''}</span>
+                          ${widget.title}
+                        </div>
+                        <div class="card-desc">${widget.beschreibung ?? ''}</div>
+                        <div class="checkbox-area">
+                          <input type="checkbox" class="widget-checkbox" data-widget-id="${widget.id}">
+                        </div>
+                    `;
+
+                    // Checkbox-Logik
+                    const checkbox = card.querySelector(".widget-checkbox");
+                    checkbox.addEventListener("click", e => {
+                        e.stopPropagation();
+                        if (checkbox.checked) {
+                            selectedWidgetIds.add(widget.id);
+                            card.classList.add("selected");
+                        } else {
+                            selectedWidgetIds.delete(widget.id);
+                            card.classList.remove("selected");
+                        }
+                        // Sobald eine Checkbox aktiv → Select-Mode!
+                        isSelectMode = selectedWidgetIds.size > 0;
+                        updateCardClickStates();
+                        updateAddButtonState();
+                    });
+
+                    // Card-Click-Event (fügt sofort hinzu, **nur** wenn nicht Select-Mode)
+                    card.addEventListener("click", e => {
+                        if (isSelectMode) return; // KLICK auf Card ignorieren, wenn Select-Mode!
+                        // Checkboxen: nichts tun (da e.target.classList.contains...)
+                        if (e.target.classList.contains("widget-checkbox")) return;
+                        addWidget(widget.id, widget.title, widget.w, widget.h, widget.icon, widget.beschreibung);
+                        closePopup();
+                    });
+
+                    list.appendChild(card);
+                }
+            });
+
+            // Add-Button-Logik
+            addBtn.onclick = function() {
+                for (const id of selectedWidgetIds) {
+                    const widget = availableWidgets.find(w => w.id === id);
+                    if (widget) addWidget(widget.id, widget.title, widget.w, widget.h, widget.icon, widget.beschreibung);
+                }
+                closePopup();
+            };
+
+            function updateCardClickStates() {
+                // Alle Cards im Popup
+                const cards = list.querySelectorAll(".widget-card");
+                cards.forEach(card => {
+                    // Im Select-Mode → Card nicht klickbar (außer Checkbox)
+                    card.style.pointerEvents = isSelectMode ? "auto" : "auto";
+                    // Optional: Cursor ändern für bessere UX
+                    card.style.cursor = isSelectMode ? "default" : "pointer";
+                });
+            }
+
+            function updateAddButtonState() {
+                // Zeige Button nur, wenn mindestens eine Checkbox!
+                addBtn.style.display = selectedWidgetIds.size > 0 ? "inline-block" : "none";
+                addBtn.disabled = selectedWidgetIds.size === 0;
+            }
+
+            // Button & Checkbox-State initial updaten
+            updateCardClickStates();
+            updateAddButtonState();
+            document.getElementById("widget-popup").style.display = "flex";
+        }
+
+
+        function closePopup() {
+            document.getElementById("widget-popup").style.display = "none";
+        }
+
+        function removeWidget(buttonElement) {
+            const item = buttonElement.closest('.grid-stack-item');
+            const id = item?.dataset?.id;
+
+            if(id) activeWidgetIds.delete(id);
+            if(item && grid) {
+                grid.removeWidget(item);
+            }
+        }
+
+        function toggleLock(buttonElement) {
+            const item = buttonElement.closest('.grid-stack-item');
+            if(!item || !grid) return;
+
+            const node = item.gridstackNode;
+
+            const locked = node.locked === true;
+
+            grid.update(item, {
+                locked: !locked,
+                noMove: locked ? false : true,
+                noResize: locked ? false: true
+            });
+
+            buttonElement.textContent = locked ? "🔒" : "🔓";
+        }
+
+                function renderWidget(id, title, width = 2, height = 2, x = 0, y = 0, locked = false, icon = '', beschreibung = '', favorit) {
+            const widget = document.createElement("div");
+            widget.className = "grid-stack-item";
+            widget.dataset.id = id;
+                    if (favorit && favorit === true) {
+            const heart = widget.querySelector('.fav-heart');
+            if (heart) heart.classList.add('favorited');
+            widget.dataset.favorit = "true";
+        } else {
+            const heart = widget.querySelector('.fav-heart');
+            if (heart) heart.classList.remove('favorited');
+            widget.dataset.favorit = "false";
+        }
+
+
+                                          let widgetHtml = `
+              <div class="grid-stack-item-content unified-widget">
+              <button class="widget-close" onclick="removeWidget(this)" title="Widget entfernen">✕</button>
+                         <button class="widget-fav-btn" onclick="toggleFavoriteWidget('${id}', this)" title="Favorisieren">
+          <svg class="fav-heart" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFD600" stroke-width="2">
+            <path d="M12 21C12 21 4 13.7 4 8.5A4.5 4.5 0 0 1 12 5.2A4.5 4.5 0 0 1 20 8.5C20 13.7 12 21 12 21Z"/>
+          </svg>
+        </button>
+
+        <div class="title-row">
+            <div class="widget-icon">${icon || ''}</div>
+            <div class="widget-title-text">${title}</div>
+        </div>
+        <div class="widget-subtitle">${beschreibung || ''}</div>
+            ${id === "import" ? `
+                      <div class="upload-area hidden" id="upload-import">
+            📤 Datei auswählen oder hierher ziehen
+            <input type="file" class="upload-input" id="fileInputHidden" style="display: none;"  />
+        </div>
+        ` : ''}
+          </div>
+        `;
+
+
+
+
+
+
+
+            widget.innerHTML = widgetHtml;
+
+                    // Favoriten-Herz auf aktuellen Status setzen!
+        if (favorit && favorit === true) {
+            const heart = widget.querySelector('.fav-heart');
+            if (heart) heart.classList.add('favorited');
+        }
+                               if (id === "geteilt") {
+            const container = widget.querySelector('.grid-stack-item-content');
+            container.innerHTML += `
+                <div class="widget-title-text" style="margin-top:5px;">
+                    <div id="shared-switch-buttons" style="display:flex; gap:8px; margin-bottom:10px;">
+                        <button id="btn-received" class="tab-btn active">Mit dir geteilt</button>
+                        <button id="btn-sent" class="tab-btn">Von dir geteilt</button>
+                    </div>
+                </div>
+                <div id="shared-docs-list" style="width:100%; margin-top:4px; max-height:220px; overflow-y:auto;"></div>
+            `;
+
+            const btnReceived = container.querySelector('#btn-received');
+            const btnSent = container.querySelector('#btn-sent');
+            const list = container.querySelector('#shared-docs-list');
+            let currentTab = "received";
+            let sharedData = { receivedDocs: [], sharedByYou: [] };
+
+            function renderSharedTab(tab) {
+                let docsArr = (tab === "received") ? sharedData.receivedDocs : sharedData.sharedByYou;
+                let notesArr = (tab === "received") ? sharedData.receivedNotes : sharedData.sharedNotesByYou;
+
+                let html = "";
+
+                // Dokumente
+                if (docsArr && docsArr.length > 0) {
+                    docsArr.slice(0, 5).forEach(d => {
+                        html += `
+                            <div class="fav-list-item" style="cursor:pointer;">
+                                <span class="widget-icon">${tab === "received" ? "🔗" : "📤"}</span>
+                                <div>
+                                    <a href="/Pdf/EditOne/${d.documentId}"
+                   style="font-size:15px; font-weight:600; color:#FFD600; text-decoration:none;">${d.documentTitle}</a>
+                                    <div style="font-size:12px; color:#999;">
+                                        ${tab === "received"
+                                            ? `Geteilt von: ${d.sharedBy} • ${new Date(d.sharedAt).toLocaleDateString()}`
+                                            : `Geteilt mit: ${d.sharedTo} • ${new Date(d.sharedAt).toLocaleDateString()}`
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // Notizen
+                if (notesArr && notesArr.length > 0) {
+                    notesArr.slice(0, 5).forEach(n => {
+                        html += `
+                            <div class="fav-list-item" style="cursor:pointer;">
+                                <span class="widget-icon">📝</span>
+                                <div>
+                                    <a href="/Notiz/Index/${n.noteId}"
+                   style="font-size:15px; font-weight:600; color:#FFD600; text-decoration:none;">${n.noteTitle}</div>
+                                    <div style="font-size:12px; color:#999;">
+                                        ${tab === "received"
+                                            ? `Geteilt von: ${n.sharedBy} • ${new Date(n.sharedAt).toLocaleDateString()}`
+                                            : `Geteilt mit: ${n.sharedTo} • ${new Date(n.sharedAt).toLocaleDateString()}`
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                if (!html) {
+                    html = `<div style="color:#888; font-size:15px;">Noch keine ${tab === "received" ? "mit dir geteilten" : "von dir geteilten"} Dokumente oder Notizen.</div>`;
+                }
+
+                list.innerHTML = html;
+            }
+
+            function loadSharedDocs() {
+                // Höhe und Breite prüfen
+                const gridNode = widget.gridstackNode;
+                if (!gridNode || gridNode.h < 4 || gridNode.w < 3) {
+                    list.innerHTML = `<div style="color:#888; font-size:15px;">Bitte vergrößern für geteilte Dokumente.</div>`;
+                    
+                    return;
+                }
+                fetch("/Dashboard/GetSharedDocs")
+                    .then(res => res.json())
+                    .then(data => {
+                        sharedData = data;
+                        renderSharedTab(currentTab);
+                    })
+                    .catch(err => {
+                        list.innerHTML = `<div style="color:#c00;">Fehler beim Laden geteilter Inhalte</div>`;
+                        console.error("SharedDocs Widget Error:", err);
+                    });
+            }
+
+            // Buttons-Logik
+            btnReceived.onclick = () => {
+                currentTab = "received";
+                btnReceived.classList.add("active");
+                btnSent.classList.remove("active");
+                renderSharedTab(currentTab);
+            };
+            btnSent.onclick = () => {
+                currentTab = "sent";
+                btnSent.classList.add("active");
+                btnReceived.classList.remove("active");
+                renderSharedTab(currentTab);
+            };
+
+            // Initial laden
+            requestAnimationFrame(loadSharedDocs);
+
+            // Auch beim Resizen reload
+            widget.addEventListener('resizestop', loadSharedDocs);
+            grid.on('resizestop', function(event, el) {
+                if (el === widget) loadSharedDocs();
+            });
+            const redirectUrl = "/GeteilteDokumente";
+            widget.addEventListener('dblclick', (e) => {
+                if(!e.target.closest('.widget.close') &&
+                !e.target.closest('.fav-heart')) {
+                    window.location.href = redirectUrl;
+                }
+            });
+        }
+
+        if(id === "admin") {
+            fetch('/Dashboard/IsAdmin')
+                .then(res => res.json())
+                .then(data => {
+                    const adminEl = document.getElementById('admin-widget');
+                    if (!adminEl) {
+                        console.warn("⚠️ admin-widget Element fehlt im DOM!");
+                        return;
+                    }
+
+                    if (data.isAdmin) {
+                        adminEl.style.display = "block";
+                    } else {
+                        adminEl.style.display = "none";
+                    }
+
+                    console.log("isadmin", data.isAdmin);
+                });
+
+            const redirectUrl = "/Dokument/DashboardAdmin";
+            widget.addEventListener('dblclick', (e) => {
+                if (!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                    window.location.href = redirectUrl;
+                }
+            });
+        }
+      
+
+            if(id=== "workflow") {
+                const redirectUrl = "/Workflows/Index";
+                widget.addEventListener('dblclick', (e) => {
+                if(!e.target.closest('.widget.close') &&
+                        !e.target.closest('.fav-heart')) {
+                    window.location.href = redirectUrl;
+                }
+                });
+            }
+            if(id === "chat") {
+                const redirectUrl = "/Chat/Chat";
+
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            }
+          
+            if(id === "versionen") {
+                const redirectUrl = "/Dokument/AlleVersionen";
+
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                        !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            }
+
+                    if(id === "notizen") {
+            fetch("/Dashboard/Letzte")
+            .then(res => res.json())
+            .then(data => {
+
+
+
+
+                const container =  widget.querySelector('.grid-stack-item-content');
+                const scrollBox = document.createElement("div");
+                scrollBox.className = "notes-scroll-wrapper";
+
+                // ➕ Button einfügen
+
+
+                // 📝 Tabelle mit Notizen
+
+
+
+                const table = document.createElement("table");
+                table.style.width = "100%";
+                table.style.fontSize = "12px";
+                table.style.display = "none";
+
+                       table.innerHTML = `
+                <thead>
+          <tr>
+            <th style="width: 40%;">Titel</th>
+            <th style="width: 50%;">Geändert am</th>
+            <th style="width: 10%; text-align: right;">
+              <button class="note-add-btn" onclick="openNotePopup()">➕</button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(n => n?.id ? `
+          <tr ondblclick="openEditPopup('${n.id}')">
+            <td style="word-wrap: break-word;">${n.title}</td>
+            <td>${n.datum}</td>
+            <td></td>
+          </tr>` : '').join('')}
+        </tbody>
+
+        `;
+                scrollBox.appendChild(table);
+                container.appendChild(scrollBox);
+
+                const redirectUrl = "/Notiz/Index";
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                        !e.target.closest('table')) {
+                            window.location.href = redirectUrl;
+                        }
+                });
+            })
+            .catch(err => {
+                console.error("Fehler beim Laden der Notizen:", err);
+            });
+        }
+                         
+
+
+
+                      
+
+
+                         if (id === "aufgaben") {
+            fetch("/Dashboard/Aufgaben")
+                .then(res => res.json())
+                .then(aufgaben => {
+                    aufgabenData["aufgaben"] = aufgaben; // speichern!
+
+                    const container = widget.querySelector('.grid-stack-item-content');
+                    const table = document.createElement("table");
+                    table.style.width = "100%";
+                    table.style.fontSize = "12px";
+                    table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th style="width: 40%;">Aufgabe</th>
+                                <th style="width: 40%;">Fällig</th>
+                                <th style="width: 20%; text-align: right;">Priorität</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    container.appendChild(table);
+
+                    // SOFORT richtig anzeigen!
+                    const rows = getMaxVisibleRows(widget);
+                    renderAufgabenTable(widget, aufgaben, rows);
+
+                    // Kein Scrollen nötig.
+                    table.style.display = rows < 1 ? "none" : "table";
+                })
+                .catch(err => {
+                    console.log("Fehler beim Laden der Aufgaben:", err);
+                });
+
+            widget.addEventListener('dblclick', (e) => {
+                if (!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                    window.location.href = "/Tests/Aufgaben";
+                }
+            });
+        }
+
+
+
+        if (id === "archiv") {
+            const redirectUrl = "/Dokument/Index?typ=archiviert&SelectedFolder=Archiv";
+
+            widget.addEventListener('dblclick', (e) => {
+                if (!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                    window.location.href = redirectUrl;
+                }
+            });
+        }
+
+
+                        // --- Füge dies irgendwo oben hinzu ---
+        function updateAuditLogList(container, data) {
+            // Höhe wie gehabt bestimmen:
+            const header = container.querySelector('.title-row');
+            const desc = container.querySelector('.widget-subtitle');
+            let freeHeight = container.clientHeight;
+            if (header) freeHeight -= header.offsetHeight || 0;
+            if (desc) freeHeight -= desc.offsetHeight || 0;
+            freeHeight -= 18;
+
+            // Shadow-Container für exakte Messung
+                const shadow = document.createElement("div");
+        shadow.style.visibility = "hidden";
+        shadow.style.position = "absolute";
+        shadow.style.left = "-9999px";
+        shadow.style.top = "0";
+        shadow.style.width = container.clientWidth + "px";
+        shadow.style.fontSize = window.getComputedStyle(container).fontSize;
+        shadow.style.padding = window.getComputedStyle(container).padding;
+        shadow.style.boxSizing = 'border-box';
+
+                const ul = document.createElement("ul");
+        ul.style.fontSize = "12px";
+        ul.style.margin = "0";
+        ul.style.padding = "0 14px 0 18px";
+        ul.style.listStyleType = "disc";
+        ul.style.textAlign = "left";
+        ul.style.wordBreak = "break-word";
+        ul.style.maxWidth = "100%";
+        ul.style.boxSizing = 'border-box';
+
+        shadow.appendChild(ul);
+        document.body.appendChild(shadow);
+
+                let count = 0;
+        for (const log of data) {
+            const li = document.createElement("li");
+            li.textContent = `[${new Date(log.zeitstempel).toLocaleString()}] ${log.aktion} - ${log.benutzerName}`;
+            li.style.wordBreak = "break-word";
+            ul.appendChild(li);
+
+            if (shadow.offsetHeight > freeHeight) {
+                ul.removeChild(li); // Das zu viel war
+                break;
+            }
+            count++;
+        }
+
+            // Entferne alte UL, füge neue ein:
+                 const oldUl = container.querySelector('ul');
+        if (oldUl) oldUl.remove();
+        const realUl = ul.cloneNode(true);
+        container.appendChild(realUl);
+
+        document.body.removeChild(shadow)
+        }
+
+        // --- Bei Initial-Rendering im "zuletzt"-Block ---
+        if (id === "zuletzt") {
+            let auditLogData = null; // Caching, damit wir bei resize nicht immer neu fetchen
+
+            function renderLogs() {
+                const container = widget.querySelector('.grid-stack-item-content');
+                if (auditLogData) {
+                    updateAuditLogList(container, auditLogData);
+                }
+            }
+
+            requestAnimationFrame(() => {
+                const gridNode = widget.gridstackNode;
+                if (gridNode?.h >= 3) {
+                    fetch("/Dashboard/AuditLog")
+                        .then(res => res.json())
+                        .then(data => {
+                            auditLogData = data; // Cache!
+                            renderLogs();
+                        });
+                }
+                // ... Doppelklick-Redirect bleibt wie gehabt ...
+            });
+
+            // --- Jetzt das Resize-Event einbauen: ---
+            widget.addEventListener('resizestop', renderLogs);
+            // ...aber besser: Das GridStack-eigene Event:
+            grid.on('resizestop', function(event, el) {
+                if (el.dataset.id === "zuletzt" && auditLogData) {
+                    renderLogs();
+                }
+            });
+        
+
+
+                const redirectUrl = "/AuditLog";
+                widget.addEventListener('dblclick', (e) => {
+                    if (!e.target.closest('.widget.close') && !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            
+        }
+
+        if(id==="scannen") {
+            const redirectUrl = widget.querySelector('.grid-stack-item-content');
+
+            widget.addEventListener('dblclick', (e) => {
+                if(!e.target.closest('.widget-close') &&
+                !e.target.closest('.fav-heart')) {
+                    window.location.href = redirectUrl;
+                }
+            });
+        }
+                                    if (id === "favoriten") {
+            const container = widget.querySelector('.grid-stack-item-content');
+
+            container.innerHTML += `
+                <div class="widget-title-text" style="margin-top:5px;">
+                    <div id="favoriten-switch-buttons" style="display:flex; gap:8px; margin-bottom:10px;">
+                        <button id="btn-fav-docs" class="tab-btn active">Dokumente</button>
+                        <button id="btn-fav-notes" class="tab-btn">Notizen</button>
+                    </div>
+                </div>
+                <div id="favoriten-docs-list" style="width:100%; margin-top:4px; max-height:220px; overflow-y:auto;"></div>
+            `;
+
+            const btnDocs = container.querySelector('#btn-fav-docs');
+            const btnNotes = container.querySelector('#btn-fav-notes');
+            const switchButtons = container.querySelector('#favoriten-switch-buttons');
+            const list = container.querySelector('#favoriten-docs-list');
+
+            let currentTab = "docs";
+            let favData = { docs: [], notes: [] };
+
+            // Tabs rendern
+            function renderFavTab(tab) {
+                const gridNode = widget.gridstackNode;
+                if (!gridNode) return;
+
+                let h = gridNode.h;
+                let items = tab === "docs" ? favData.docs : favData.notes;
+                let html = "";
+
+                if (!h || h < 4) {
+                    list.innerHTML = `<div style="color:#888; font-size:15px;">Bitte vergrößern für Favoriten.</div>`;
+                    switchButtons.style.display = "none";
+                    return;
+                } else {
+                    switchButtons.style.display = "flex";
+                }
+
+                let visibleItems = h === 4 ? items.slice(0, 1) : items.slice(0, 5);
+
+                if (!visibleItems || visibleItems.length === 0) {
+                    html = `<div style="color:#888; font-size:15px;">Keine favorisierten ${tab === "docs" ? "Dokumente" : "Notizen"}.</div>`;
+                } else {
+                    html = visibleItems.map(item => `
+                        <div class="fav-list-item" style="cursor:pointer; display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;"
+                             onclick="window.location.href='${tab === "docs" ? `/Pdf/EditOne/${item.id}` : `/Notiz/Index/${item.id}`}'">
+                            <span class="widget-icon">${tab === "docs" ? "⭐" : "📝"}</span>
+                            <div>
+                                <div style="font-size:15px; font-weight:600; color:#FFD600;">${item.titel}</div>
+                                <div style="font-size:12px; color:#999;">Hinzugefügt am: ${new Date(item.datum).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                list.innerHTML = html;
+                enableSnapScroll('#favoriten-docs-list');
+            }
+
+            // Laden wie bei Shared
+            function loadFavoritenWidget() {
+                const gridNode = widget.gridstackNode;
+                if (!gridNode || gridNode.h < 4 || gridNode.w < 3) {
+                    list.innerHTML = `<div style="color:#888; font-size:15px;">Bitte vergrößern für Favoriten.</div>`;
+                    switchButtons.style.display = "none";
+                    return;
+                }
+
+                switchButtons.style.display = "flex";
+
+                fetch("/Dashboard/GetFavoritenDokumente")
+                    .then(res => res.json())
+                    .then(data => {
+                        favData.docs = data.favoriten || [];
+                        favData.notes = data.favNotes || [];
+                        renderFavTab(currentTab);
+                    })
+                    .catch(err => {
+                        list.innerHTML = `<div style="color:#c00;">Fehler beim Laden der Favoriten</div>`;
+                        console.error("Favoriten Widget Error:", err);
+                    });
+            }
+
+            // Button Events
+            btnDocs.onclick = () => {
+                currentTab = "docs";
+                btnDocs.classList.add("active");
+                btnNotes.classList.remove("active");
+                renderFavTab(currentTab);
+            };
+
+            btnNotes.onclick = () => {
+                currentTab = "notes";
+                btnNotes.classList.add("active");
+                btnDocs.classList.remove("active");
+                renderFavTab(currentTab);
+            };
+
+            // Initial laden
+            requestAnimationFrame(loadFavoritenWidget);
+
+            // Resize Events (exakt wie bei Shared!)
+            grid.on('resizestop', function (event, el) {
+                if (el === widget) loadFavoritenWidget();
+            });
+
+            // Doppelklick -> Favoriten-Seite öffnen
+            widget.addEventListener('dblclick', (e) => {
+                if (!e.target.closest('.widget.close') && !e.target.closest('.fav-heart')) {
+                    window.location.href = "/Favoriten";
+                }
+            });
+        }
+
+
+            if(id === "ablage") {
+                const redirectUrl = `/Dokument/Index`;
+
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                        !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            }
+                 if(id === "scannen") {
+                const redirectUrl = "/Dokument/ScanDokument";
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                        console.log(redirectUrl);
+                        window.location.href = redirectUrl;
+                    }
+                })
+            }
+            if(id === "suche") {
+                const redirectUrl = "/Dokument/Suchen";
+
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                })
+            }
+            if(id === "signatur") {
+                const redirectUrl = "/Signieren";
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                    !e.target.closest('.fav-heart')) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            }
+            if(id === "import") {
+                const redirectUrl = `/Tests/UploadMulti`;
+
+
+                widget.addEventListener('dblclick', (e) => {
+                    if(!e.target.closest('.widget.close') &&
+                        !e.target.closest('.upload-area') &&
+                        !e.target.closest('input[type="file"]') &&
+                        !e.target.closest('.fav-heart')){
+                        window.location.href = redirectUrl;
+                    }
+                });
+
+            
+            const uploadEl = widget.querySelector(`#upload-${id}`);
+            const fileInput = uploadEl.querySelector('.upload-input');
+            if(uploadEl) {
+                uploadEl.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
+                });
+
+                fileInput.addEventListener('change', handleFileUpload);
+
+                uploadEl.addEventListener('click', () => {
+                    fileInput.click();
+                });
+
+                uploadEl.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadEl.classList.add('drag-over');
+                });
+
+                uploadEl.addEventListener('dragleave', () => {
+                    uploadEl.classList.remove('drag-over');
+                });
+
+                uploadEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    uploadEl.classList.remove('drag-over');
+
+                    const files = e.dataTransfer.files;
+                    if(files.length > 0) {
+                        uploadFiles(files);
+                    }
+                }) ;
+            }
+            
+            requestAnimationFrame(() => toggleImportDropzone(widget));
+            }
+          
+                    let config = {
+            x, y, w: width, h: height,
+            minW: 2, minH: 1,
+            maxW: 3, maxH: 5,
+            noMove: locked, noResize: locked,
+            locked: locked,
+            favorit: favorit === true
+        };
+
+            grid.addWidget(widget, config);
+            activeWidgetIds.add(id);
+            updateWidgetContent(widget);
+
+
+        // Warten bis Widget vollständig im Grid ist
+        requestAnimationFrame(() => {
+            const gridNode = widget.gridstackNode;
+            if (id === "import" && gridNode?.h >= 4) {
+                widget.querySelector(`#upload-${id}`).style.display = "flex";
+            }
+
+                      if (id === "notizen") {
+            showNotesTableWhenReady(widget);
+        }
+
+
+                     if (isEditMode) {
+            const closeBtn = widget.querySelector('.widget-close');
+            if (closeBtn) closeBtn.style.display = 'inline-block';
+        }
+
+        });
+            
+        enforceLockedState();
+        }
+                function updateGridHeight() {
+            // Errechne die verfügbare Höhe (abzüglich Header/Abstände)
+            const headerHeight = document.querySelector('.dashboard-header')?.offsetHeight || 60;
+            const topOffset = document.querySelector('.dashboard-header')?.offsetTop || 0;
+            const windowHeight = window.innerHeight;
+            // z.B. 30px padding unten
+            const gridHeight = Math.max(windowHeight - headerHeight - topOffset - 30, 350); // mindestens 350px
+
+            const gridEl = document.querySelector('.grid-stack');
+            if(gridEl) {
+                gridEl.style.height = gridHeight + "px";
+                gridEl.style.maxHeight = gridHeight + "px";
+            }
+            // GridStack kann auf neue Höhe reagieren (evtl. mit grid._updateContainerHeight())
+            if(window.grid) {
+                window.grid._updateContainerHeight();
+            }
+        }
+
+        // Beim Laden und bei jedem Resize:
+        window.addEventListener("resize", updateGridHeight);
+        window.addEventListener("DOMContentLoaded", updateGridHeight);
+                function updateSharedDocsWidget(container, docs, h) {
+            const list = container.querySelector('#shared-docs-list');
+            let visibleDocs = [];
+
+            if (h < 4) {
+                list.innerHTML = `<div style="color:#888; font-size:15px;">Bitte vergrößern für geteilte Dokumente.</div>`;
+                return;
+            }
+
+            // Maximal 5 anzeigen, aber abhängig von Höhe
+            if (h === 4) {
+                visibleDocs = docs.slice(0, 1); // Nur das erste Dokument
+                list.style.overflowY = "hidden";
+                list.style.maxHeight = "none";
+            } else {
+                visibleDocs = docs.slice(0, 5);
+                list.style.overflowY = "auto";
+                list.style.maxHeight = "220px"; // Anpassen je nach GridStack Höhe
+            }
+
+            if (visibleDocs.length === 0) {
+                list.innerHTML = `<div style="color:#888; font-size:15px;">Noch keine Dokumente geteilt.</div>`;
+                return;
+            }
+
+            list.innerHTML = visibleDocs.map(d =>
+                `<div class="fav-list-item" style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;">
+                    <span class="widget-icon">🔗</span>
+                    <div>
+                        <div class="widget-title" style="font-size:15px; font-weight:600;">${d.documentTitle}</div>
+                        <div style="font-size:12px; color:#999;">Geteilt von: ${d.sharedBy} • ${new Date(d.sharedAt).toLocaleDateString()}</div>
+                    </div>
+                </div>`
+            ).join('');
+            enableSnapScroll('#shared-docs-list');
+        }
+                               function enableSnapScroll(listId = '#shared-docs-list') {
+            const list = document.querySelector(listId);
+            if (!list) return;
+            const items = Array.from(list.querySelectorAll('.fav-list-item'));
+            if (items.length <= 1) return;
+
+            let currentIndex = 0;
+            const itemHeight = items[0].offsetHeight;
+
+            // Mausrad: immer exakt auf ein Item scrollen
+            list.addEventListener('wheel', function(e) {
+                if (e.deltaMode !== 0) return;
+                e.preventDefault();
+
+                // Aktuellen Index berechnen
+                currentIndex = Math.round(list.scrollTop / itemHeight);
+                if (e.deltaY > 0 && currentIndex < items.length - 1) currentIndex++;
+                if (e.deltaY < 0 && currentIndex > 0) currentIndex--;
+
+                // Direkt auf neues Item scrollen (ohne Animation)
+                list.scrollTop = currentIndex * itemHeight;
+            });
+
+            // Touch/Scrollbar: nach Scrollen „snappen“, aber OHNE Animation
+            let scrollTimeout = null;
+            list.addEventListener('scroll', function () {
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const nearestIndex = Math.round(list.scrollTop / itemHeight);
+                    list.scrollTop = nearestIndex * itemHeight;
+                    currentIndex = nearestIndex;
+                }, 60); // Kurz nach dem Scrollen korrigieren
+            });
+        }
+
+                function updateWidgetContent(el) {
+            const node = el.gridstackNode;
+            if (!node) return;
+
+
+                    if (el.dataset.id === "aufgaben") {
+            if (!aufgabenData["aufgaben"]) return;
+            
+                const node = el.gridstackNode;
+                // explizit: wenn Widget zu klein, verstecke alles!
+                if (node && node.h > 2) {
+                   
+               requestAnimationFrame(() => {
+            // Tabelle finden oder neu bauen
+            let table = el.querySelector("table");
+            if (!table) {
+                table = document.createElement("table");
+                table.style.width = "100%";
+                table.style.fontSize = "12px";
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Aufgabe</th>
+                            <th style="width: 40%;">Fällig</th>
+                            <th style="width: 20%; text-align: right;">Priorität</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                `;
+                el.querySelector('.grid-stack-item-content').appendChild(table);
+            }
+            
+            // Jetzt IMMER tbody leeren, dann maxRows neu berechnen und füllen
+            const rows = getMaxVisibleRows(el);
+            renderAufgabenTable(el, aufgabenData["aufgaben"], rows);
+        });
+        }else {
+             let table = el.querySelector("table");
+                    if (table) table.style.display = "none";
+                    return;
+                }
+        }
+                if(el.dataset.id === "geteilt") {
+            const container = el.querySelector('.grid-stack-item-content');
+            const gridNode = el.gridstackNode;
+            const list = container.querySelector('#shared-docs-list');
+            const btns = container.querySelector('#shared-switch-buttons');
+                   if (!gridNode || !btns || !list) return;
+
+        // Widget zu klein: Hinweis zeigen, alles andere verstecken!
+
+
+                if (gridNode.h < 4 || gridNode.w < 3) {
+            btns.style.display = "none";
+            list.style.display = "block";
+            list.style.overflowY = "hidden";        // <--- Scrollbar deaktivieren
+            list.style.maxHeight = "none";          // <--- verhindert, dass alter Wert bleibt
+                           list.innerHTML = `<div style="
+            color:#bbb;
+            font-size:15px;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding: 4px 0 2px 0;
+            font-weight: 400;
+            line-height: 1.3;
+            text-align: left;
+            letter-spacing: 0.01em;
+        ">Bitte vergrößern für geteilte Dokumente.</div>`;
+            return;
+        } else {
+            btns.style.display = "flex";
+            list.style.display = "block";
+            list.style.overflowY = "auto";          // <--- Scrollbar AN, wenn Platz!
+            list.style.maxHeight = "220px";         // <--- je nach Layout
+        }
+            // Optional: reload, wenn größer
+            fetch("/Dashboard/GetSharedDocs")
+                .then(res => res.json())
+                .then(docs => {
+                    if (!docs.length) {
+                        list.innerHTML = `<div style="color:#888; font-size:15px;">Noch keine Dokumente geteilt.</div>`;
+                        return;
+                    }
+                   
+                    list.innerHTML = docs.map(d =>
+                        `<div class="fav-list-item" style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;">
+                            <span class="widget-icon">🔗</span>
+                            <div>
+                                <div class="widget-title" style="font-size:15px; font-weight:600;">${d.documentTitle}</div>
+                                <div style="font-size:12px; color:#999;">Geteilt von: ${d.sharedBy} • ${new Date(d.sharedAt).toLocaleDateString()}</div>
+                            </div>
+                        </div>`
+                    ).join('');
+                })
+                .catch(err => {
+                    list.innerHTML = `<div style="color:#c00;">Fehler beim Laden geteilter Inhalte</div>`;
+                    console.error("SharedDocs Widget Error:", err);
+                });
+
+        }
+            // Beispiel für "import"-Widget:
+            if (el.dataset.id === "import") {
+                const uploadArea = el.querySelector('.upload-area');
+                if (!uploadArea) return;
+
+                if (node.h >= 4) {
+                    uploadArea.classList.remove('hidden');
+                    uploadArea.style.background = "#ffeeee";
+                } else {
+                    uploadArea.classList.add('hidden');
+                    uploadArea.style.background = "";
+                }
+            }
+
+            // Beispiel für "notizen"-Widget:
+            if (el.dataset.id === "notizen") {
+                const table = el.querySelector("table");
+                if (table) table.style.display = node.h >= 4 ? "table" : "none";
+            }
+
+                if (node.el.dataset.id === "zuletzt") {
+        const container = node.el.querySelector('.grid-stack-item-content');
+        const ul = container.querySelector("ul");
+
+        if (node.h >= 3 && !ul) {
+            // Inhalt nachladen
+            fetch("/Dashboard/AuditLog")
+                .then(res => res.json())
+                .then(data => {
+                    const newUl = document.createElement("ul");
+                    newUl.style.fontSize = "12px";
+                    data.forEach(log => {
+                        const li = document.createElement("li");
+                        li.textContent = `[${new Date(log.zeitstempel).toLocaleString()}] ${log.aktion} - ${log.benutzerName}`;
+                        newUl.appendChild(li);
+                    });
+                    container.appendChild(newUl);
+                })
+                .catch(err => {
+                    console.error("Fehler beim Nachladen der AuditLogs:", err);
+                });
+
+        } else if (node.h < 3 && ul) {
+            // Inhalt entfernen, wenn zu klein
+            ul.remove();
+        }
+
+        }
+        }
+
+          
+       
+
+
+        let favoriteSaveTimeout = null;
+                                function toggleFavoriteWidget(widgetId, btn) {
+            fetch(`/Dashboard/ToggleFavorite/` + widgetId, { method: "POST" })
+                .then(res => {
+                    if (!res.ok) throw new Error("Favorit konnte nicht gesetzt werden");
+                    return res.text();
+                })
+                .then(text => text ? JSON.parse(text) : {})
+                .then(data => {
+                    const heart = btn.querySelector('.fav-heart');
+                    if (data.isFavorite) {
+                        heart.classList.add('favorited');
+                    } else {
+                        heart.classList.remove('favorited');
+                    }
+                    // --- Node im Grid UND DOM aktualisieren!
+                    let node = grid.engine.nodes.find(n => n.el && n.el.dataset && n.el.dataset.id === widgetId);
+                    if (node) {
+                        node.favorit = !!data.isFavorite;
+                        // Auch im DOM setzen, falls reload/saveLayout damit arbeitet:
+                        node.el.dataset.favorit = data.isFavorite ? "true" : "false";
+                    }
+                    setTimeout(() => saveLayout(), 300);
+                })
+                .catch(err => {
+                    alert("Favorit konnte nicht geändert werden: " + err.message);
+                });
+        }
+
+
+
+
+                // Funktion: zeigt die Tabelle im Notizen-Widget, wenn Höhe ≥ 3
+        function showNotesTableWhenReady(widget) {
+            const maxTries = 10;
+            let tries = 0;
+
+            const checkReady = () => {
+                const gridNode = widget.gridstackNode;
+                const table = widget.querySelector("table");
+
+                if (gridNode && table) {
+                    console.log("gridNode.h =", gridNode.h);
+                    table.style.display = gridNode.h >= 3 ? "table" : "none";
+                } else if (tries < maxTries) {
+                    tries++;
+                    setTimeout(checkReady, 50); // Wiederholen nach 50ms
+                } else {
+                    console.warn("Tabelle konnte nicht initialisiert werden.");
+                }
+            };
+
+            checkReady();
+        }
+
+                            function toggleImportDropzone(widget) {
+            const uploadArea = widget.querySelector('.upload-area');
+            const node = widget.gridstackNode;
+            if (!uploadArea || !node) {
+                console.log("Kein uploadArea oder node:", uploadArea, node);
+                return;
+            }
+            if (node.h >= 4) {
+                uploadArea.classList.remove('hidden');
+                uploadArea.style.background = "#ffeeee"; // Für Sichtbarkeit!
+            } else {
+                uploadArea.classList.add('hidden');
+                uploadArea.style.background = ""; // Reset
+            }
+            console.log("toggleImportDropzone:", node.h, "-> hidden?", uploadArea.classList.contains('hidden'));
+        }
+
+
+
+               function deleteNote(id) {
+            console.log("deleteNote aufgerufen mit id:", id);
+            if(!confirm("Diese Notiz wirklich löschen?")) return;
+
+            fetch(`/Dashboard/DeleteNotiz/${id}`, {
+                method: "DELETE"
+            })
+            .then(res => {
+                if(!res.ok) throw new Error("Löschen fehlgeschlagen");
+                // Jetzt erst reload!
+                reloadNotesTable();
+                alert("Notiz erfolgreich gelöscht!");
+            })
+            .catch(err => {
+                console.error("Fehler beim Löschen:", err);
+                alert("Fehler beim Löschen: " + err.message)
+            });
+        }
+        window.deleteNote = deleteNote;
+        function openAllNotes() {
+            fetch("/Dashboard/AlleNotizen")
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById("note-full-list");
+                tbody.innerHTML = data.map(n => `
+                <tr ondblclick="openEditPopup('${n.id}')">
+                <td>${n.title}</td>
+                <td>${n.datum}</td>
+                <td style="vertical-align: middle; text-align: center;">
+                    <button class="delete-note" onclick="deleteNote('${n.id}')">🗑️</button>
+                </td>
+                </tr>
+                `).join('');
+                document.getElementById("note-full-popup").style.display = "flex";
+            })
+            .catch (err => {
+                alert("Fehler beim Laden aller Notizen: " + err.message);
+            });
+        }
+
+        function closeFullNotePopup() {
+            document.getElementById("note-full-popup").style.display = "none";
+            reloadNotesTable();
+        }
+
+                function addWidget(id, title, width = 2, height = 2, icon = '', beschreibung = '', favorit) {
+            if (activeWidgetIds.has(id)) return;
+            const position = findNextAvailablePosition(width, height);
+            renderWidget(id, title, width, height, position.x, position.y, false, icon, beschreibung, favorit);
+            closePopup();
+
+        }
+
+        function findNextAvailablePosition(w = 2, h= 2) {
+            const maxCols = grid.opts.column || 12;
+            const maxRows = 100;
+
+            for(let y = 0; y < maxRows; y++) {
+                for(let x = 0; x <= maxCols - w; x++) {
+                    if(grid.isAreaEmpty(x, y, w, h)) {
+                        return {x,y};
+                    }
+                }
+            }
+
+            return { x:0, y:0 };
+        }
+
+        function openNotePopup() {
+            document.getElementById("note-id").value = "";
+            document.getElementById("note-title").value = "";
+            document.getElementById("note-content").value = "";
+            document.getElementById("note-modal-title").textContent = "Neue Notiz erstellen";
+            document.getElementById("note-popup").style.display = "flex";
+        }
+
+        function closeNotePopup() {
+            document.getElementById("note-popup").style.display = "none";
+            reloadNotesTable();
+        }
+
+                      function openEditPopup(id) {
+            fetch(`/Dashboard/Notiz/${id}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Notiz nicht gefunden");
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById("note-id").value = data.id;
+                    document.getElementById("note-title").value = data.title;
+                    document.getElementById("note-content").value = data.content;
+                    document.getElementById("note-modal-title").textContent = "Notiz bearbeiten";
+                    document.getElementById("note-popup").style.display = "flex";
+                })
+                .catch(err => {
+                    alert("Fehler beim Laden der Notiz: " + err.message);
+                });
+        }
+
+
+
+        function submitNote() {
+            const id = document.getElementById("note-id").value;
+            const title = document.getElementById("note-title").value.trim();
+            const content = document.getElementById("note-content").value.trim();
+
+            if(!title || !content) {
+                alert("Bitte Titel und Inhalt ausfüllen");
+                return;
+            }
+
+            const url = id ? "/Dashboard/Update" : "/Dashboard/Erstellen"
+
+            const payload = { title, content };
+            if(id) payload.id = parseInt(id);
+
+                    fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        })
+        .then(async res => {
+            if (!res.ok) throw new Error("Fehler beim Speichern");
+
+            const contentType = res.headers.get("Content-Type");
+            if (contentType && contentType.includes("application/json")) {
+                return res.json();
+            }
+
+            return {}; // Leere Antwort fallback
+        })
+               .then(data => {
+            alert("Notiz gespeichert");
+            closeNotePopup();
+            const notesPopup = document.getElementById("note-full-popup");
+            if (notesPopup && (notesPopup.style.display === "flex" || notesPopup.style.display === "block")) {
+                openAllNotes();
+            } else {
+                reloadNotesTable();
+            }
+        })
+        .catch(err => {
+            console.error("Fehler beim Speichern:", err);
+            alert("Fehler: " + err.message);
+        });
+
+        }
+        function reloadNotesTable() {
+            setTimeout(() => {
+                const notesWidget = [...document.querySelectorAll('.grid-stack-item')]
+                    .find(w => w.dataset.id === "notizen");
+                if(!notesWidget) {
+                    console.warn("Notizen-Widget nicht gefunden!");
+                    return;
+                }
+
+                const table = notesWidget.querySelector("table");
+                if(!table) {
+                    console.warn("Tabelle im Notizen-Widget nicht gefunden!");
+                    return;
+                }
+
+                const tbody = table.querySelector("tbody");
+                if(!tbody) {
+                    console.warn("Tbody nicht gefunden!");
+                    return;
+                }
+
+                fetch("/Dashboard/Letzte" )
+                    .then(res => res.json())
+                    .then(data => {
+                        tbody.innerHTML = data.map(n => `
+                            <tr ondblclick="openEditPopup('${n.id}')">
+                                <td style="word-wrap: break-word;">${n.title}</td>
+                                <td>${n.datum}</td>
+                                <td></td>
+                            </tr>
+                        `).join('');
+                        table.style.display = "table";
+                    })
+                    .catch(err => {
+                        console.error("Fehler beim Nachladen der Notizen:", err);
+                    });
+            }, 150); // 150ms Verzögerung!
+        }
+
+
+        function triggerFileInput() {
+            document.getElementById("fileInputHidden").click();
+        }
+
+                function uploadFiles(files) {
+            if(!files || files.length === 0) {
+                alert("Keine Datei ausgewählt!");
+                return;
+            }
+
+            document.getElementById("upload-overlay").style.display = "flex";
+
+            const formData = new FormData();
+            formData.append("Datei", files[0]); // Muss "Datei" heißen!
+
+
+                    fetch("/Tests/UploadMulti?handler=Analyze", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+        })
+        .then(async res => {
+            let text = await res.text();
+            try {
+                let json = JSON.parse(text);
+                if(json.success && json.redirectUrl) {
+                    // Weiterleitung, falls gewünscht:
+                    window.location.href = json.redirectUrl;
+                } else {
+                    alert("Upload erfolgreich, aber kein Redirect-URL gefunden!");
+                }
+            } catch(e) {
+                alert("Upload fehlgeschlagen (keine JSON-Antwort):\n" + text);
+            }
+        })
+            .catch(err => {
+                document.getElementById("upload-overlay").style.display = "none";
+                alert("Upload fehlgeschlagen: " + err.message);
+            });
+        }
+
+               function uploadFiles2(files) {
+            if(!files || files.length === 0) {
+                alert("Keine Datei ausgewählt!");
+                return;
+            }
+
+            document.getElementById("upload-overlay").style.display = "flex";
+
+            // FormData mit dem ersten File
+            const formData = new FormData();
+            formData.append("Datei", files[0]); // "Datei" ist der Name im PageModel
+
+
+                    fetch("/Tests/UploadTest?handler=Analyze", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+        })
+            .then(async res => {
+                if(res.redirected) {
+                    window.location.href = res.url;
+                    return;
+                }
+                const txt = await res.text();
+                document.getElementById("upload-overlay").style.display = "none";
+                alert("Upload abgeschlossen, aber kein Redirect: " + txt);
+            })
+            .catch(err => {
+                document.getElementById("upload-overlay").style.display = "none";
+                alert("Upload fehlgeschlagen: " + err.message);
+            });
+        }
+
+
+        function handleFileUpload(event) {
+
+            const files = event.target.files;
+
+            if(!files || files.length === 0) {
+                alert("Keine Datei ausgewählt");
+                return;
+            }
+
+            uploadFiles(files);
+        }
+
+               function handleDrop(event) {
+            event.preventDefault();
+
+            const files = event.dataTransfer.files;
+            if (!files || files.length === 0) {
+                alert("Keine Datei erkannt");
+                return;
+            }
+
+            document.getElementById("upload-overlay").style.display = "flex";
+
+            const formData = new FormData();
+            formData.append("Datei", files[0]); // WICHTIG: Name wie im PageModel!
+
+
+                   fetch("/Tests/UploadTest?handler=Analyze", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+            headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+        })
+            .then(res => {
+                if (res.redirected) {
+                    window.location.href = res.url;
+                    return;
+                }
+                return res.text();
+            })
+            .then(data => {
+                // Falls kein Redirect erfolgt, evtl. Fehler anzeigen
+                if (data) alert("Upload abgeschlossen: " + data);
+            })
+            .catch(err => {
+                alert("Upload fehlgeschlagen: " + err.message);
+            })
+            .finally(() => {
+                document.getElementById("upload-overlay").style.display = "none";
+            });
+        }
+
+
+        function searchDocuments(query) {
+            fetch(`/Documents/Search?query=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(results => {
+                const container = document.getElementById("searchResults-ablage");
+                container.innerHtml = results.map(doc =>
+                `<div>${doc.name}</div>`
+                ).join('');
+            });
+        }
+                // 1. Selektiere alle Checkboxen und den Button
+        const checkboxes = document.querySelectorAll('.widget-checkbox');
+        const addButton = document.getElementById('add-selected-widgets'); // Passe ggf. die ID an!
+
+        function updateUI() {
+            // Zähle wie viele angeklickt sind
+            const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+
+            // Button aktivieren/deaktivieren
+            addButton.disabled = checkedCount === 0;
+
+            // Checkboxen aktivieren/deaktivieren
+            checkboxes.forEach(cb => {
+                // Sobald mindestens 1 angehakt ist: alle deaktivieren, die noch nicht angehakt sind
+                cb.disabled = checkedCount > 0 && !cb.checked;
+            });
+        }
+
+        // Beim Laden und bei jedem Klick auf eine Checkbox prüfen:
+        checkboxes.forEach(cb => cb.addEventListener('change', updateUI));
+        window.addEventListener('DOMContentLoaded', updateUI);
+     
+    </script>
+}

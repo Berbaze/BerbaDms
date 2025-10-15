@@ -1,0 +1,587 @@
+﻿@page
+@model DmsProjeckt.Pages.Pdf.EditOneModel
+@{
+    ViewData["Title"] = "PDF bearbeiten";
+    var decodedFileName = Uri.UnescapeDataString(Model.FileName);
+}
+<div class="pdf-editor-outer-bg">
+    <div class="pdf-editor-container">
+        <!-- Header / Titel-Leiste -->
+        <div class="editor-header">
+            <h2>PDF bearbeiten</h2>
+            <a class="file-link" href="@Model.SasUrl" target="_blank">@decodedFileName</a>
+        </div>
+        <!-- Toolbar (Adobe-Style, sticky) -->
+        <div class="editor-toolbar-main">
+            <label class="upload-label">
+                📥 Signaturbild:
+                <input type="file" id="signatureFile" accept="image/*" class="upload-input" />
+            </label>
+            <button class="btn-glow" id="drawSignatureBtn">✍️ Signatur zeichnen</button>
+            <button class="btn-glow btn-outline" id="addTextBtn">➕ Text hinzufügen</button>
+        </div>
+        <div class="editor-toolbar-secondary">
+            <div class="toolbar-group">
+                <span class="toolbar-title">📄 Navigation:</span>
+                <button class="btn-glow btn-outline" onclick="prevPage()">⬅️</button>
+                <span id="page-info">Seite 1</span>
+                <button class="btn-glow btn-outline" onclick="nextPage()">➡️</button>
+            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-title">🔄 Rotation:</span>
+                <button class="btn-glow btn-outline" onclick="rotatePdf(90)">90°</button>
+                <button class="btn-glow btn-outline" onclick="rotatePdf(180)">180°</button>
+                <button class="btn-glow btn-outline" onclick="rotatePdf(270)">270°</button>
+                <button class="btn-glow btn-outline" onclick="rotatePdf(0)">Reset</button>
+            </div>
+        </div>
+        <!-- PDF-Bereich -->
+        <div class="pdf-viewer">
+            <canvas id="pdf-canvas"></canvas>
+            <div id="signature-box"></div>
+            <div id="text-box">Text hier...</div>
+        </div>
+        <!-- Zeichnen-Bereich -->
+        <div id="draw-area" style="display:none; margin-top:1rem;">
+            <canvas id="drawCanvas" width="400" height="150"></canvas><br />
+            <div class="draw-btn-group">
+                <button class="btn-glow" onclick="saveDraw()">✅ Übernehmen</button>
+                <button class="btn-glow btn-outline" onclick="closeDraw()">❌ Schließen</button>
+            </div>
+        </div>
+        <!-- Footer Toolbar -->
+        <div class="editor-footer-toolbar">
+            <button class="btn-glow btn-outline" onclick="downloadPdf()">⬇️ Download</button>
+            <button class="btn-glow btn-outline" onclick="zoomOut()">➖</button>
+            <span id="page-info-footer" class="page-info-footer">Seite 1</span>
+            <button class="btn-glow btn-outline" onclick="zoomIn()">➕</button>
+        </div>
+        <button id="saveSignatureBtn" class="btn-glow btn-primary">💾 Speichern</button>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        html, body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #23272e 0%, #181b1f 100%);
+        }
+
+        .pdf-editor-outer-bg {
+            min-height: 100vh;
+            background: linear-gradient(120deg, #23272e 20%, #23272e 100%);
+            padding: 2.5rem 0;
+        }
+
+        .pdf-editor-container {
+            max-width: 950px;
+            margin: auto;
+            background: rgba(30,32,38,0.99);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 #00000040, 0 1.5px 6px #22262b7a;
+            padding: 2.7rem 2rem 2.2rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .editor-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.3rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1.5px solid #32353e;
+        }
+
+            .editor-header h2 {
+                font-family: 'Segoe UI Semibold', Arial, sans-serif;
+                font-size: 2.1rem;
+                color: #ffce48;
+                margin: 0;
+                letter-spacing: 0.03em;
+            }
+
+        .file-link {
+            background: linear-gradient(90deg,#413a25,#2d2d2a 85%);
+            color: #ffce48;
+            border-radius: 7px;
+            padding: 0.46em 1em;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: 0 1px 8px 0 #ffd70030;
+            border: 1px solid #434141;
+            font-size: 1.02rem;
+            margin-left: auto;
+            transition: background .15s;
+        }
+
+            .file-link:hover {
+                background: #554d2f;
+                color: #fffbe6;
+            }
+
+        .editor-toolbar-main {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: #23262eeb;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 2px 8px 0 #11141847;
+            padding: 1.1rem 1.2rem 0.8rem 1.2rem;
+            position: sticky;
+            top: 0;
+            z-index: 15;
+        }
+
+        .editor-toolbar-secondary {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 1.7rem;
+            background: #262832ee;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 8px 0 #0002;
+            padding: 0.6rem 1.2rem 0.7rem 1.2rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .toolbar-title {
+            font-weight: 600;
+            color: #ffce48;
+            margin-right: 0.6em;
+            font-size: 1.05em;
+        }
+
+        .upload-label {
+            font-weight: 600;
+            color: #ffce48;
+        }
+
+        .upload-input {
+            margin-left: 0.4em;
+            margin-right: 0.6em;
+            background: #181b1f;
+            color: #ffce48;
+            border: 1px solid #35373d;
+        }
+
+        .btn-glow, .btn-primary, .btn-outline {
+            font-size: 1em;
+            padding: 0.48em 1.18em;
+            border-radius: 7px;
+            border: 1.2px solid #38362a;
+            cursor: pointer;
+            transition: 0.15s;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .btn-glow {
+            background: linear-gradient(90deg,#2c2c23 25%,#554a26 100%);
+            color: #ffce48;
+            box-shadow: 0 2px 10px 0 #ffd70022,0 1.5px 4px #ffd70013;
+        }
+
+            .btn-glow:hover, .btn-glow:focus {
+                background: linear-gradient(90deg,#ffce48 25%,#554a26 100%);
+                color: #23272e;
+                box-shadow: 0 3px 16px 0 #ffce4859, 0 2.5px 10px #ffefc311;
+            }
+
+        .btn-outline {
+            background: #1a1d22 !important;
+            color: #ffce48 !important;
+            border: 1.2px solid #bfae65;
+            box-shadow: none;
+        }
+
+            .btn-outline:hover {
+                background: #ffce48 !important;
+                color: #23272e !important;
+            }
+
+        .btn-primary {
+            margin-top: 1.7rem;
+            margin-bottom: 0.8rem;
+            background: linear-gradient(90deg,#554a26 25%,#ffce48 100%);
+            width: 65%;
+            max-width: 280px;
+            font-size: 1.13em;
+            letter-spacing: 0.03em;
+            color: #1a1814;
+            border: none;
+        }
+
+            .btn-primary:hover {
+                background: linear-gradient(90deg,#ffce48 10%,#554a26 100%);
+                color: #262626;
+            }
+
+        /* PDF Anzeige */
+        .pdf-viewer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #21222a;
+            border-radius: 13px;
+            box-shadow: 0 2px 32px 0 #1819205f;
+            min-height: 940px;
+            padding: 2rem 0.8rem 2.2rem 0.8rem;
+            margin-bottom: 1.8rem;
+            position: relative;
+        }
+
+        #pdf-canvas {
+            width: 100% !important;
+            max-width: 830px;
+            min-height: 1050px;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+            border: 2px solid #4a4322;
+            box-shadow: 0 8px 32px 0 #1a1610cc;
+            /* Darkmode "Invert": Nur auskommentieren, falls du auch PDF dunkel haben willst!
+                            filter: invert(1) hue-rotate(180deg);
+                            */
+        }
+
+        /* Signature & Text Boxen */
+        #signature-box {
+            display: none;
+            position: absolute;
+            min-width: 80px;
+            min-height: 40px;
+            border: 2px dashed #ffce48;
+            background: linear-gradient(135deg,rgba(120,100,40,0.22),rgba(255,255,255,0.1));
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 7px;
+            cursor: move;
+            z-index: 12;
+            box-shadow: 0 2px 10px 0 #ffce4842;
+        }
+
+            #signature-box:active {
+                border-color: #ffe295;
+            }
+
+        #text-box {
+            display: none;
+            position: absolute;
+            min-width: 100px;
+            min-height: 38px;
+            border: 1.5px dashed #ffe295;
+            background: rgba(255, 236, 120, 0.16);
+            color: #ffce48;
+            font-weight: 600;
+            padding: 6px 9px;
+            border-radius: 6px;
+            z-index: 13;
+            box-shadow: 0 2px 10px 0 #ffce4825;
+            cursor: move;
+            white-space: pre-line;
+            font-size: 1.07em;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        /* Zeichen-Bereich für Signatur */
+        #draw-area {
+            background: #262832;
+            border-radius: 14px;
+            box-shadow: 0 2px 16px 0 #2d2e3229;
+            padding: 1.2rem 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+
+        .draw-btn-group {
+            display: flex;
+            gap: 0.7rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        #drawCanvas {
+            border: 2px solid #ffe295;
+            background-color: #1a1d22;
+            border-radius: 9px;
+            margin-bottom: 0.7rem;
+        }
+
+        /* Footer Toolbar */
+        .editor-footer-toolbar {
+            width: 100%;
+            background: #23262e;
+            padding: 0.9rem 2.2rem;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 -2px 10px 0 #1819204a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 0.7rem;
+            position: relative;
+        }
+
+        .page-info-footer {
+            font-weight: 600;
+            color: #ffce48;
+            font-size: 1.1em;
+            margin: 0 0.7rem;
+        }
+
+        @@media (max-width: 1100px) {
+            .pdf-editor-container {
+                max-width: 99vw;
+                padding: 0.5rem;
+            }
+
+            .editor-toolbar-main, .editor-toolbar-secondary, .editor-footer-toolbar {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            .pdf-viewer {
+                padding: 0.4rem 0.1rem 0.7rem 0.1rem;
+                min-height: 320px;
+            }
+
+            #pdf-canvas {
+                min-height: 320px;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const sasUrl    = @Html.Raw(Json.Serialize(Model.SasUrl));
+            const blobName  = @Html.Raw(Json.Serialize(Model.FileName));
+            const firmaName = "@Model.FirmaName";
+
+            let currentPage = 1, currentRotation = 0, pdfDoc = null;
+            let scale = 2.0; // Für Zoom
+            let signatureImage = null;
+            let sigX = 50, sigY = 50, sigWidth = 160, sigHeight = 80;
+            let txtX = 50, txtY = 150, txtW = 200, txtH = 60;
+
+            const canvas = document.getElementById("pdf-canvas"),
+                  ctx    = canvas.getContext("2d"),
+                  sigBox = document.getElementById("signature-box"),
+                  txtBox = document.getElementById("text-box");
+
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.worker.min.js';
+
+            async function renderPage(num, rot = currentRotation, zoom = scale) {
+                const p = await pdfDoc.getPage(num);
+                const vp = p.getViewport({ scale: zoom, rotation: rot });
+                canvas.width = vp.width;
+                canvas.height = vp.height;
+                await p.render({ canvasContext: ctx, viewport: vp }).promise;
+                updateUIBoxes();
+                document.getElementById("page-info").innerText = `Seite ${num} / ${pdfDoc.numPages}`;
+                document.getElementById("page-info-footer").innerText = `Seite ${num} / ${pdfDoc.numPages}`;
+            }
+
+            function updateUIBoxes() {
+                if (signatureImage && signatureImage.src) {
+                    sigBox.style.display = 'block';
+                    sigBox.style.left = `${sigX}px`;
+                    sigBox.style.top  = `${sigY}px`;
+                    sigBox.style.width = `${sigWidth}px`;
+                    sigBox.style.height = `${sigHeight}px`;
+                    sigBox.style.backgroundImage = `url('${signatureImage.src}')`;
+                } else {
+                    sigBox.style.display = 'none';
+                }
+                txtBox.style.display = 'block';
+                txtBox.style.left = `${txtX}px`;
+                txtBox.style.top  = `${txtY}px`;
+                txtBox.style.width = `${txtW}px`;
+                txtBox.style.height = `${txtH}px`;
+                txtBox.style.color = 'black';
+                txtBox.style.fontWeight = 'bold';
+                txtBox.style.whiteSpace = 'pre-line';
+            }
+
+            async function renderPDF() {
+                if(!sasUrl) { alert("Keine PDF-URL gefunden!"); return; }
+                try {
+                    const proxy = `/pdfproxy?url=${encodeURIComponent(sasUrl)}`;
+                    pdfDoc = await pdfjsLib.getDocument(proxy).promise;
+                    renderPage(currentPage);
+                } catch(err) {
+                    alert("PDF konnte nicht geladen werden: " + err.message);
+                    console.error(err);
+                }
+            }
+            window.nextPage  = () => { if (currentPage < pdfDoc.numPages) { currentPage++; renderPage(currentPage); } };
+            window.prevPage  = () => { if (currentPage > 1) { currentPage--; renderPage(currentPage); } };
+            window.rotatePdf = (d) => { currentRotation = d; renderPage(currentPage); };
+
+            window.zoomIn = () => { scale += 0.25; renderPage(currentPage, currentRotation, scale);}
+            window.zoomOut = () => { scale = Math.max(0.5, scale - 0.25); renderPage(currentPage, currentRotation, scale);}
+            window.downloadPdf = () => { window.open(sasUrl, '_blank'); };
+
+            document.getElementById("signatureFile").addEventListener("change", e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = evt => {
+                    signatureImage = new window.Image();
+                    signatureImage.onload = updateUIBoxes;
+                    signatureImage.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById("drawSignatureBtn").addEventListener("click", () => {
+                document.getElementById("draw-area").style.display = 'block';
+            });
+
+            window.closeDraw = () => {
+                document.getElementById("draw-area").style.display = 'none';
+            };
+
+            window.saveDraw = () => {
+                const img = new Image();
+                img.src = document.getElementById("drawCanvas").toDataURL('image/png');
+                img.onload = () => { signatureImage = img; updateUIBoxes(); closeDraw(); };
+            };
+
+            const dc = document.getElementById("drawCanvas"),
+                  dctx = dc.getContext("2d");
+            let drawing = false;
+            dc.addEventListener("mousedown", () => { drawing = true; dctx.beginPath(); });
+            dc.addEventListener("mouseup", () => { drawing = false; dctx.beginPath(); });
+            dc.addEventListener("mousemove", e => {
+                if (!drawing) return;
+                const r = dc.getBoundingClientRect();
+                const x = e.clientX - r.left, y = e.clientY - r.top;
+                dctx.lineWidth = 2; dctx.lineCap = "round"; dctx.strokeStyle = "#000";
+                dctx.lineTo(x, y); dctx.stroke(); dctx.beginPath(); dctx.moveTo(x, y);
+            });
+
+            // Drag Signature
+            let dragSig = false, offX = 0, offY = 0;
+            sigBox.addEventListener("mousedown", e => {
+                dragSig = true; offX = e.offsetX; offY = e.offsetY;
+            });
+
+            // Drag Text
+            let dragText = false, offTxtX = 0, offTxtY = 0;
+            txtBox.addEventListener("mousedown", e => {
+                dragText = true; offTxtX = e.offsetX; offTxtY = e.offsetY;
+            });
+
+            window.addEventListener("mousemove", e => {
+                const r = canvas.getBoundingClientRect();
+                if (dragSig) {
+                    let newX = e.clientX - r.left - offX;
+                    let newY = e.clientY - r.top - offY;
+                    newX = Math.max(0, Math.min(newX, canvas.width / (canvas.offsetWidth / canvas.clientWidth) - sigWidth));
+                    newY = Math.max(0, Math.min(newY, canvas.height / (canvas.offsetHeight / canvas.clientHeight) - sigHeight));
+                    sigX = newX;
+                    sigY = newY;
+                    updateUIBoxes();
+                } else if (dragText) {
+                    let newX = e.clientX - r.left - offTxtX;
+                    let newY = e.clientY - r.top - offTxtY;
+                    newX = Math.max(0, Math.min(newX, canvas.width / (canvas.offsetWidth / canvas.clientWidth) - txtW));
+                    newY = Math.max(0, Math.min(newY, canvas.height / (canvas.offsetHeight / canvas.clientHeight) - txtH));
+                    txtX = newX;
+                    txtY = newY;
+                    updateUIBoxes();
+                }
+            });
+
+            window.addEventListener("mouseup", () => {
+                dragSig = false;
+                dragText = false;
+            });
+
+            new ResizeObserver(() => {
+                const s = getComputedStyle(sigBox);
+                sigWidth = Math.min(parseFloat(s.width), canvas.width);
+                sigHeight = Math.min(parseFloat(s.height), canvas.height);
+                updateUIBoxes();
+            }).observe(sigBox);
+
+            new ResizeObserver(() => {
+                const s = getComputedStyle(txtBox);
+                txtW = parseFloat(s.width);
+                txtH = parseFloat(s.height);
+                updateUIBoxes();
+            }).observe(txtBox);
+
+            document.getElementById("addTextBtn").addEventListener("click", () => {
+                const now = new Date().toLocaleString('de-DE');
+                const cleanFirma = firmaName.replace(/[^\x20-\x7EÀ-ÿ]/g, '');
+                const textHtml = `Signiert am: ${now}<br>Firma: ${cleanFirma}`;
+                txtBox.innerHTML = textHtml;
+                txtBox.style.display = 'block';
+            });
+
+            document.getElementById("saveSignatureBtn").addEventListener("click", async () => {
+                const btn = document.getElementById("saveSignatureBtn");
+                btn.disabled = true;
+                btn.textContent = "⏳ Speichern...";
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const relSigX = sigX * scaleX;
+                const relSigY = canvas.height - sigY * scaleY - sigHeight * scaleY;
+                const relSigW = sigWidth * scaleX;
+                const relSigH = sigHeight * scaleY;
+                const relTxtX = txtX * scaleX;
+                const relTxtY = canvas.height - (txtY + txtH) * scaleY;
+                const relTxtW = txtW * scaleX;
+                const relTxtH = txtH * scaleY;
+                const cleanedText = txtBox.innerHTML.replace(/<br\s*\/?>/gi, "\n");
+                const body = {
+                    fileName: blobName,
+                    pageNumber: currentPage,
+                    canvasWidth : canvas.width,
+                    canvasHeight : canvas.height,
+                    imageBase64 : signatureImage?.src,
+                    x: relSigX, y: relSigY, width: relSigW, height: relSigH,
+                    textHtml: cleanedText,
+                    textX: relTxtX, textY: relTxtY, textWidth: relTxtW, textHeight: relTxtH
+                };
+                const res = await fetch("/api/pdfapi/save-signature", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+                btn.disabled = false;
+                btn.textContent = "💾 Speichern";
+                if (res.ok) {
+                    const result = await res.json();
+                    alert("✅ PDF erfolgreich gespeichert!");
+                    if (result.redirectUrl) window.location.href = result.redirectUrl;
+                } else {
+                    const err = await res.text();
+                    alert("❌ Fehler beim Speichern: " + err);
+                }
+            });
+
+            renderPDF();
+        });
+    </script>
+}

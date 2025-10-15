@@ -1,0 +1,9 @@
+.vs/ 
+bin/ 
+obj/ 
+*.user 
+*.vscode/ 
+*.vsidx 
+*.sqlite 
+*.db 
+desktop.ini 

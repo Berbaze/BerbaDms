@@ -1,0 +1,808 @@
+﻿@page
+@model DmsProjeckt.Pages.Tests.AufgabenModel
+@{
+    ViewData["Title"] = "Aufgabenübersicht";
+}
+<div class="back-link">
+    <a asp-page="/Index">← Zurück zur Startseite</a>
+</div>
+<h2 class="page-title">📋 Aufgabenübersicht</h2>
+@if (ViewData["OpenAufgabeModal"] != null && (bool)ViewData["OpenAufgabeModal"])
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var modal = new bootstrap.Modal(document.getElementById('neueAufgabeModal'));
+            modal.show();
+        });
+    </script>
+}
+
+<button class="btn btn-secondary mb-3" type="button" data-bs-toggle="modal" data-bs-target="#neueAufgabeModal">
+    Neue Aufgabe erstellen
+</button>
+
+<style>
+    /* ----- DARKMODE FÜR MODAL ----- */
+    /* ============================
+       Aufgabenübersicht – Dark UI
+       ============================ */
+
+    body {
+        background-color: #12151c;
+        color: #e3e6ea;
+        
+    }
+
+    a {
+        color: #4fd8ff;
+        text-decoration: none;
+    }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+    .back-link a {
+        font-weight: 500;
+        color: #4fd8ff;
+    }
+
+    .page-title {
+        color: #4fd8ff;
+        font-weight: 600;
+        margin-top: 1rem;
+    }
+
+    /* Modal Dark Theme */
+    .modal-content {
+        background: #22232a;
+        color: #fff;
+        border-radius: 1.1rem;
+        border: none;
+        box-shadow: 0 6px 32px rgba(0,0,0,0.21);
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        background: transparent;
+        border: none;
+        color: #fff;
+        z-index: 10000;
+    }
+
+    .modal-header {
+        border-bottom: 1px solid #33343b;
+    }
+
+    .modal-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #4fd8ff;
+    }
+
+    .btn-close {
+        filter: invert(1) grayscale(1) brightness(1.2);
+    }
+
+    /* Inputs & Forms */
+    .form-label,
+    .modal-body label,
+    .form-check-label {
+        color: #bbb;
+        font-weight: 600;
+    }
+
+    .form-control,
+    .form-select,
+    textarea.form-control {
+        background: #191b1f;
+        color: #fff;
+        border: 1.5px solid #33343b;
+        border-radius: 6px;
+    }
+
+        .form-control:focus,
+        .form-select:focus,
+        textarea.form-control:focus {
+            border-color: #2d8cff;
+            box-shadow: 0 0 0 1.5px #2d8cff55;
+            background: #23242a;
+        }
+
+    /* Date-Time Picker */
+    input[type="datetime-local"].form-control {
+        background: #191b1f;
+        color: #fff;
+        border: 1.5px solid #33343b;
+    }
+
+    /* Checkbox / Radio */
+    input[type="radio"]:checked,
+    input[type="checkbox"]:checked {
+        accent-color: #30a4ff;
+    }
+
+    /* File Upload */
+    input[type="file"].form-control {
+        background: #191b1f;
+        color: #fff;
+        border: 1.5px solid #33343b;
+    }
+
+    /* Placeholders */
+    input::placeholder,
+    textarea::placeholder {
+        color: #666;
+    }
+
+    /* Modal Button */
+    .modal-content .btn-success {
+        background: linear-gradient(90deg, #35bb72 80%, #30a4ff 100%);
+        color: #fff;
+        border: none;
+        border-radius: 0.8rem;
+        font-size: 1.08rem;
+        font-weight: 600;
+        box-shadow: 0 1px 8px #29a07955;
+        transition: background 0.15s, box-shadow 0.14s;
+    }
+
+        .modal-content .btn-success:hover {
+            background: linear-gradient(90deg, #30a4ff 60%, #54ffba 100%);
+            box-shadow: 0 3px 20px #30a4ff22;
+        }
+
+    /* Scrollbar */
+    .modal-body {
+        scrollbar-width: thin;
+        scrollbar-color: #30a4ff #18191c;
+        z-index: 10000;
+    }
+
+        .modal-body::-webkit-scrollbar {
+            width: 7px;
+            background: #18191c;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #2d8cff;
+            border-radius: 8px;
+        }
+
+    /* Tabelle */
+    table tr,
+    table td,
+    table th {
+        background-color: #1e1f24;
+        color: #ffffff;
+    }
+
+        table tr:nth-child(even) {
+            background-color: #2a2b30;
+        }
+
+    th.asc::after {
+        content: " ↑";
+    }
+
+    th.desc::after {
+        content: " ↓";
+    }
+
+    /* Aufgaben-Zeile */
+    tr.aufgabe-details {
+        display: none;
+    }
+
+        tr.aufgabe-details.show {
+            display: table-row;
+        }
+
+    /* Tabs */
+    .nav-tabs .nav-link {
+        color: #bbb;
+        background-color: #1b2029;
+        border: 1px solid #2c3138;
+    }
+
+        .nav-tabs .nav-link.active {
+            background-color: #2c3138;
+            color: #4fd8ff;
+            border-bottom: 2px solid #4fd8ff;
+        }
+
+    /* File preview (unter File input) */
+    #selectedFiles .form-check-label {
+        font-weight: 500;
+        color: #e5e5e5;
+    }
+
+    .modal {
+        z-index: 10000;
+    }
+
+        .modal .dropdown-menu {
+            display: block; /* wichtig: Bootstrap überschreibt per JS */
+            visibility: hidden; /* unsichtbar bis getoggled */
+            z-index: 20000;
+            position: absolute !important;
+        }
+
+    .file-list li {
+        position: relative; /* Bezugspunkt für absolute Position */
+    }
+
+    .options-menu {
+        display: none;
+        position: fixed;
+        background: #22232a;
+        border: 1px solid #33343b;
+        border-radius: 6px;
+        padding: 6px 0;
+        min-width: 160px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+    }
+
+
+    .option-item {
+        display: block;
+        padding: 6px 12px;
+        color: #e3e6ea;
+        text-decoration: none;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+        .option-item:hover {
+            background: #2d8cff33;
+            color: #4fd8ff;
+        }
+
+    .faellig-datum,
+    .faellig-uhrzeit {
+        max-width: 160px; /* Breite für jedes Feld */
+        background: #191b1f;
+        color: #fff;
+        border: 1.5px solid #33343b;
+        border-radius: 6px;
+    }
+
+        .faellig-datum:focus,
+        .faellig-uhrzeit:focus {
+            border-color: #2d8cff;
+            box-shadow: 0 0 0 1.5px #2d8cff55;
+            background: #23242a;
+        }
+
+
+    .modal-body {
+        overflow: visible !important;
+    }
+
+
+
+</style>
+<div class="modal fade" id="neueAufgabeModal" tabindex="-1" aria-labelledby="neueAufgabeLabel" aria-hidden="true" >
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="neueAufgabeLabel">Neue Aufgabe erstellen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                @* Deine Formularelemente kommen HIER HINEIN! *@
+                 <form method="post" asp-page-handler="Erstellen" enctype="multipart/form-data" id="neueAufgabeForm">
+                    <div class="mb-3">
+                        <label asp-for="NeueAufgabe.Titel" class="form-label">Titel <span class="text-danger">*</span></label>
+                        <input asp-for="NeueAufgabe.Titel" class="form-control" placeholder="Titel eingeben" required />
+                        <span asp-validation-for="NeueAufgabe.Titel" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="NeueAufgabe.Beschreibung" class="form-label">Beschreibung</label>
+                        <textarea asp-for="NeueAufgabe.Beschreibung" class="form-control" placeholder="Details zur Aufgabe..."></textarea>
+                        <span asp-validation-for="NeueAufgabe.Beschreibung" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fällig bis</label>
+                        <div class="d-flex gap-2">
+                            <input type="date"
+                                   name="FaelligDatum"
+                                   class="form-control faellig-datum"
+                                   value="@(Model.NeueAufgabe.FaelligBis.ToString("yyyy-MM-dd"))" />
+
+                            <!-- Uhrzeit -->
+                            <input type="time"
+                                   name="FaelligUhrzeit"
+                                   class="form-control faellig-uhrzeit"
+                                   step="60"
+                                   value="@(Model.NeueAufgabe.FaelligBis.ToString("HH:mm"))" />
+                        </div>
+                        <span asp-validation-for="NeueAufgabe.FaelligBis" class="text-danger"></span>
+                    </div>
+
+
+                    <div class="mb-3">
+                        <label asp-for="NeueAufgabe.FuerUser" class="form-label">Zuweisen an <span class="text-danger">*</span></label>
+                        <select asp-for="NeueAufgabe.FuerUser" class="form-select" required>
+                            <option value="">-- Bitte auswählen --</option>
+                            @foreach (var user in Model.BenutzerListe)
+                            {
+                                <option value="@user.Id">@user.Vorname @user.Nachname (@user.Email)</option>
+                            }
+                        </select>
+                        <span asp-validation-for="NeueAufgabe.FuerUser" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Priorität</label><br />
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <div class="form-check form-check-inline">
+                                <input type="radio" asp-for="NeueAufgabe.Prioritaet" value="@i" class="form-check-input" id="prio-@i" />
+                                <label class="form-check-label" for="prio-@i">@i</label>
+                            </div>
+                        }
+                        <span asp-validation-for="NeueAufgabe.Prioritaet" class="text-danger"></span>
+                    </div>
+                    @if (Model.VorgewaehltesDokument != null)
+                    {
+                        <div class="mb-3 alert alert-info">
+                            <strong>Dokument für Aufgabe vorausgewählt:</strong>
+                            <span>@Model.VorgewaehltesDokument.Titel (@Model.VorgewaehltesDokument.Dateiname)</span>
+                            <input type="hidden" name="DokumentId" value="@Model.VorgewaehltesDokument.Id" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Dateien anhängen (optional)</label>
+                            <input type="file" id="fileInput" name="Dateien" class="form-control" multiple />
+                            <div id="selectedFiles" class="mt-2"></div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-success">
+                        ✅ Aufgabe erstellen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="collapse" id="neueAufgabeForm">
+    <div class="card card-body mb-4">
+        <h5 class="mb-3"><span class="badge bg-primary"></span> Neue Aufgabe</h5>
+        @* 🔐 Validierung anzeigen *@
+        <partial name="_ValidationScriptsPartial" />
+        <vc:validation-summary model-only="true" class="text-danger mb-3" />
+
+       
+
+    </div>
+</div>
+
+<!-- Tabs + partials -->
+<ul class="nav nav-tabs mb-3" id="aufgabenTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="fuer-mich-tab" data-bs-toggle="tab" data-bs-target="#fuer-mich" type="button" role="tab">Für mich</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="von-mir-tab" data-bs-toggle="tab" data-bs-target="#von-mir" type="button" role="tab">Erstellt von mir</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="aufgabenTabsContent">
+    <div class="tab-pane fade show active" id="fuer-mich" role="tabpanel">
+        <partial name="_AufgabenTabelle" model="(Model.AlleAufgaben, false)" />
+    </div>
+    <div class="tab-pane fade" id="von-mir" role="tabpanel">
+        <partial name="_AufgabenTabelle" model="(Model.AufgabenVonMir, true)" />
+    </div>
+</div>
+
+
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content fancy-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">📌 Aufgabe Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-row">
+                    <span class="detail-label">📄 Titel:</span>
+                    <span class="detail-value" id="modal-titel"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📝 Beschreibung:</span>
+                    <span class="detail-value" id="modal-beschreibung"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">📅 Fällig bis:</span>
+                    <span class="detail-value" id="modal-faellig"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">⭐ Priorität:</span>
+                    <span class="detail-value" id="modal-prio"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label" id="modal-userrole"></span>
+                    <span class="detail-value" id="modal-user"></span>
+                </div>
+                <div class="detail-row last-row">
+                    <span class="detail-label">📎 Dateien:</span>
+                    <ul class="file-list" id="modal-dateien"></ul>
+                </div>
+
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <form method="post" asp-page-handler="Loeschen" id="deleteForm">
+                    <input type="hidden" name="id" id="delete-id" />
+                    <button type="submit" class="btn btn-danger">🗑️ Löschen</button>
+                </form>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">❌ Schließen</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="fileActionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content fancy-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">📂 Datei-Aktionen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="file-name-display" class="fw-bold text-info"></p>
+                <div class="d-grid gap-2">
+                    <a id="file-edit" class="btn btn-sm btn-primary">✏️ Bearbeiten</a>
+                    <a id="file-open" class="btn btn-sm btn-secondary" target="_blank">📂 Öffnen</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="global-options-menu" class="options-menu">
+    <a href="#" id="opt-edit" class="option-item">✏️ Bearbeiten</a>
+    <a href="#" id="opt-open" target="_blank" class="option-item">📂 Öffnen</a>
+</div>
+
+
+<style>
+    tr.aufgabe-details {
+        display: none;
+    }
+
+        tr.aufgabe-details.show {
+            display: table-row;
+        }
+
+    th.asc::after {
+        content: " ↑";
+    }
+
+    th.desc::after {
+        content: " ↓";
+    }
+
+    .fancy-modal {
+        background: #1c1f26;
+        color: #e3e6ea;
+        border-radius: 14px;
+        border: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        padding: 5px 10px;
+    }
+
+        .fancy-modal .modal-title {
+            color: #4fd8ff;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+    .detail-row {
+        display: flex;
+        justify-content: flex-start;
+        align-items: baseline;
+        padding: 8px 0;
+        border-bottom: 1px solid #2b2e35;
+    }
+
+    .detail-label {
+        flex: 0 0 160px;
+        color: #4fd8ff;
+        font-weight: 600;
+    }
+
+    .detail-value {
+        flex: 1;
+        color: #fff;
+    }
+
+    .file-list {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+    }
+
+        .file-list li {
+            margin-bottom: 6px;
+        }
+
+        .file-list a {
+            color: #4fd8ff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .file-list a:hover {
+                text-decoration: underline;
+            }
+
+    .modal-footer {
+        border-top: 1px solid #2b2e35;
+    }
+
+        .modal-footer .btn {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 6px 14px;
+        }
+
+    .detail-row {
+        display: flex;
+        justify-content: flex-start;
+        align-items: baseline;
+        padding: 8px 0;
+        border-bottom: 1px solid #2b2e35;
+    }
+
+        .detail-row.last-row {
+            border-bottom: none;
+        }
+
+</style>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tabellen-Sortierung
+            document.querySelectorAll('table.sortierbare-tabelle').forEach(table => {
+                const headers = table.querySelectorAll('th[data-column]');
+                let currentSort = { column: null, asc: true };
+
+                headers.forEach(header => {
+                    header.style.cursor = "pointer";
+                    header.addEventListener("click", () => {
+                        const column = header.getAttribute("data-column");
+                        const asc = currentSort.column === column ? !currentSort.asc : true;
+                        currentSort = { column, asc };
+
+                        headers.forEach(h => h.classList.remove("asc", "desc"));
+                        header.classList.add(asc ? "asc" : "desc");
+
+                        const rows = Array.from(table.querySelector("tbody").rows);
+                        const filteredRows = rows.filter(r => !r.classList.contains("aufgabe-details"));
+                        const index = header.cellIndex;
+
+                        filteredRows.sort((a, b) => {
+                            const getText = row => row.cells[index].textContent.trim();
+                            let valA = getText(a), valB = getText(b);
+
+                            switch (column) {
+                                case "faellig":
+                                    valA = new Date(valA || "1970-01-01");
+                                    valB = new Date(valB || "1970-01-01");
+                                    return asc ? valA - valB : valB - valA;
+                                case "prio":
+                                    return asc ? parseInt(valA) - parseInt(valB) : parseInt(valB) - parseInt(valA);
+                                case "erledigt":
+                                    valA = valA.includes("✅") ? 1 : 0;
+                                    valB = valB.includes("✅") ? 1 : 0;
+                                    return asc ? valA - valB : valB - valA;
+                                default:
+                                    return asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                            }
+                        });
+
+                        const tbody = table.querySelector("tbody");
+                        filteredRows.forEach(row => {
+                            const detailRow = row.nextElementSibling?.classList.contains("aufgabe-details")
+                                ? row.nextElementSibling
+                                : null;
+                            tbody.appendChild(row);
+                            if (detailRow) tbody.appendChild(detailRow);
+                        });
+                    });
+                });
+            });
+
+            // Aufgabe-Details toggeln
+            document.querySelectorAll('.aufgabe-zeile').forEach(row => {
+                row.addEventListener('click', () => {
+                    document.querySelectorAll('.aufgabe-details.show').forEach(detail => {
+                        detail.classList.remove('show');
+                    });
+                    const next = row.nextElementSibling;
+                    if (next && next.classList.contains('aufgabe-details')) {
+                        next.classList.toggle('show');
+                    }
+                });
+            });
+
+            // File Input Handling
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                const selectedFilesContainer = document.getElementById('selectedFiles');
+                const form = fileInput.closest('form');
+                const confirmedFiles = new DataTransfer();
+
+                fileInput.addEventListener('change', () => {
+                    Array.from(fileInput.files).forEach(file => {
+                        if (![...confirmedFiles.files].some(f => f.name === file.name && f.size === file.size)) {
+                            confirmedFiles.items.add(file);
+                            renderConfirmedFiles();
+                        }
+                    });
+                    fileInput.value = '';
+                });
+
+                function renderConfirmedFiles() {
+                    selectedFilesContainer.innerHTML = '';
+                    Array.from(confirmedFiles.files).forEach((file, index) => {
+                        const fileEntry = document.createElement('div');
+                        fileEntry.classList.add('form-check', 'mt-1');
+                        fileEntry.innerHTML = `
+                            <input class="form-check-input file-checkbox" type="checkbox" checked id="file-${index}">
+                            <label class="form-check-label" for="file-${index}">${file.name}</label>
+                        `;
+                        selectedFilesContainer.appendChild(fileEntry);
+                    });
+                }
+
+                form.addEventListener('submit', () => {
+                    const finalFiles = new DataTransfer();
+                    selectedFilesContainer.querySelectorAll('.file-checkbox').forEach((checkbox, index) => {
+                        if (checkbox.checked) {
+                            finalFiles.items.add(confirmedFiles.files[index]);
+                        }
+                    });
+                    document.querySelector('input[name="Dateien"]').files = finalFiles.files;
+                });
+            }
+
+            // Workflow Buttons
+            document.querySelectorAll('.erledigt-button[data-type="workflow"]').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const form = e.target.closest("form");
+                    const stepIdInput = form.querySelector("input[name='stepId']");
+                    if (!stepIdInput) {
+                        toastr?.error("Fehler: StepId fehlt.");
+                        return;
+                    }
+                    const stepId = stepIdInput.value;
+                    await completeStepViaApi(stepId, e.target);
+                });
+            });
+
+            // Details Button → Modal füllen
+            document.querySelectorAll(".details-button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    document.getElementById("modal-titel").textContent = btn.dataset.titel || "-";
+                    document.getElementById("modal-beschreibung").textContent = btn.dataset.beschreibung || "-";
+                    document.getElementById("modal-faellig").textContent = btn.dataset.faellig || "-";
+                    document.getElementById("modal-prio").textContent = btn.dataset.prio || "-";
+                    document.getElementById("modal-userrole").textContent = btn.dataset.userrole || "👤 User";
+                    document.getElementById("modal-user").textContent = btn.dataset.user || "-";
+                    document.getElementById("delete-id").value = btn.dataset.id;
+
+                    const fileList = document.getElementById("modal-dateien");
+                    fileList.innerHTML = "";
+
+                    if (btn.dataset.dateien && btn.dataset.dateien.trim() !== "") {
+                        const files = btn.dataset.dateien.split(";").map(f => f.trim()).filter(f => f.includes("|"));
+                        if (files.length > 0) {
+                            files.forEach(f => {
+                                const [rawId, rawName, rawUrl] = f.split("|");
+                                const name = rawName?.trim();
+                                const url = rawUrl?.trim();
+                                const id = rawId?.trim();
+                                if (name && url) {
+                                    fileList.innerHTML += `
+        <li class="d-flex align-items-center justify-content-between position-relative">
+            <div>
+                <a href="${url}" target="_blank" download="${name}" class="text-info text-decoration-none">
+                    📎 ${name}
+                </a>
+            </div>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary toggle-options"
+                    data-filename="${name}"
+                    data-url="${url}"
+                    data-id="${id}">
+                ⋮
+            </button>
+        </li>`;
+                                }
+                            });
+                        } else {
+                            fileList.innerHTML = "<li><em>Keine Datei</em></li>";
+                        }
+                    } else {
+                        fileList.innerHTML = "<li><em>Keine Datei</em></li>";
+                    }
+                });
+            });
+        });
+
+        // === Global Options-Menu Handling ===
+        const menu = document.getElementById("global-options-menu");
+        const editLink = document.getElementById("opt-edit");
+        const openLink = document.getElementById("opt-open");
+
+        document.addEventListener("click", (e) => {
+            if (e.target.classList.contains("toggle-options")) {
+                e.stopPropagation();
+
+                const button = e.target;
+                const filename = button.dataset.filename;
+                const url = button.dataset.url;
+                const docId = button.dataset.id;
+
+                // Links setzen
+                editLink.href = `/Dokument/Bearbeiten?id=${docId}&fromTask=true`;
+                openLink.href = url;
+
+                // Menü positionieren
+                const rect = button.getBoundingClientRect();
+                menu.style.top = `${rect.bottom + 4}px`;
+                menu.style.left = `${rect.left}px`;
+
+                menu.style.display = "block";
+                return;
+            }
+
+            if (e.target.closest(".option-item")) {
+                menu.style.display = "none";
+                return;
+            }
+
+            menu.style.display = "none";
+        });
+
+        // Workflow Step API Call
+        async function completeStepViaApi(stepId, button) {
+            const apiUrl = `/api/workflow/complete-step/${stepId}`;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = "⏳...";
+            try {
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    button.closest("td").innerHTML = "<span class='text-success'>✅</span>";
+                    toastr?.success("Aufgabe erledigt und nächster Schritt aktiviert!");
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const err = await res.text();
+                    toastr?.error(err || "Fehler beim Abschließen der Aufgabe");
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }
+            } catch (err) {
+                toastr?.error("Netzwerkfehler beim Abschließen der Aufgabe");
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+    </script>
+}
+

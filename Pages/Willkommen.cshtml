@@ -1,0 +1,147 @@
+﻿@page
+@using Microsoft.AspNetCore.Identity
+@using DmsProjeckt.Data
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@model DmsProjeckt.Pages.WillkommenModel
+@{
+    // Sidebar verstecken
+    ViewData["HideSidebar"] = true;
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+}
+
+<section class="hero text-center">
+    <div class="container">
+        <h1>Willkommen bei DMS</h1>
+        <p>Verwalte deine Dokumente einfach und sicher an einem Ort.</p>
+        <div class="hero-buttons">
+            <a class="btn btn-primary btn-lg" href="/Identity/Account/Login">Anmelden</a>
+            <a class="btn btn-outline-light btn-lg" href="/Identity/Account/Register">Konto erstellen</a>
+        </div>
+    </div>
+</section>
+
+<section class="abos py-5 bg-dark text-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Unsere Abos</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="abo-card">
+                    <h3>Free</h3>
+                    <p class="price">0 €</p>
+                    <ul>
+                        <li>1 Benutzer</li>
+                        <li>50 Dokumente</li>
+                        <li>Basis-Support</li>
+                    </ul>
+                    <a href="/Identity/Account/Register" class="btn btn-outline-light">Jetzt starten</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="abo-card featured">
+                    <h3>Pro</h3>
+                    <p class="price">9,99 € / Monat</p>
+                    <ul>
+                        <li>5 Benutzer</li>
+                        <li>Unbegrenzte Dokumente</li>
+                        <li>Priorisierter Support</li>
+                    </ul>
+                    <a href="/Identity/Account/Register" class="btn btn-primary">Auswählen</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="abo-card">
+                    <h3>Enterprise</h3>
+                    <p class="price">49,99 € / Monat</p>
+                    <ul>
+                        <li>Unbegrenzte Benutzer</li>
+                        <li>Erweiterte Sicherheit</li>
+                        <li>24/7 Support</li>
+                    </ul>
+                    <a href="/Identity/Account/Register" class="btn btn-outline-light">Kontakt aufnehmen</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="dms-cta py-5 text-center">
+    <div class="container">
+        <h2>Direkt zu deinem DMS</h2>
+        <p>Starte jetzt mit deinem Dokumenten-Management-System.</p>
+        @if (isAuthenticated)
+        {
+            <a href="/Dashboard" class="btn btn-success btn-lg">Zum DMS</a>
+        }
+        else
+        {
+            <a href="/Identity/Account/Login" class="btn btn-warning btn-lg">Melde dich an, um zum DMS zu gelangen</a>
+        }
+    </div>
+</section>
+
+<style>
+    .hero {
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+        color: #fff;
+        padding: 120px 20px;
+    }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+    .hero-buttons .btn {
+        margin: 5px;
+    }
+
+    .abo-card {
+        background: #1f2937;
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+        .abo-card h3 {
+            margin-bottom: 15px;
+        }
+
+        .abo-card .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .abo-card ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+            .abo-card ul li {
+                margin: 8px 0;
+            }
+
+        .abo-card.featured {
+            border: 2px solid #3b82f6;
+            transform: scale(1.05);
+        }
+
+    .dms-cta {
+        background: #0f172a;
+        color: #fff;
+    }
+
+    .no-sidebar {
+        margin-left: 0 !important;
+    }
+</style>

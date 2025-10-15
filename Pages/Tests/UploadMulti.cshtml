@@ -1,0 +1,1044 @@
+﻿@page
+@model DmsProjeckt.Pages.Tests.UploadMultiModel
+@using DmsProjeckt.Data
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<style>
+    /* ============================= */
+    /* 🎨 Labels Modern              */
+    /* ============================= */
+    .form-label, label, .col-md-3 > label, .col-md-6 > label {
+        color: #58d0ff !important;
+        font-weight: 900 !important;
+        font-family: 'Montserrat', Arial, sans-serif !important;
+        font-size: 1.07rem !important;
+        letter-spacing: .02em;
+        margin-bottom: 0.35rem;
+        text-shadow: 0 1px 5px #0e223922;
+        text-transform: uppercase;
+    }
+
+    /* ============================= */
+    /* 📤 Upload Box Modern          */
+    /* ============================= */
+    .upload-box {
+        background: #191926;
+        padding: 28px;
+        border-radius: 16px;
+        border: 1px solid #2e2e3e;
+        color: #f8f8f8;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        margin-bottom: 2rem;
+    }
+
+    .upload-title {
+        color: #58d0ff;
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .drop-zone {
+        border: 2px dashed #58d0ff;
+        border-radius: 12px;
+        padding: 35px;
+        text-align: center;
+        background: #14141e;
+        cursor: pointer;
+        transition: background 0.25s, border-color 0.25s;
+    }
+
+        .drop-zone:hover {
+            background: #1a1a26;
+            border-color: #80e4ff;
+        }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: #58d0ff;
+    }
+
+    .upload-text {
+        margin-top: 10px;
+        font-size: 1.05rem;
+    }
+
+        .upload-text .highlight {
+            color: #ffc700;
+            font-weight: 600;
+        }
+
+    /* Liste fichiers */
+    .file-list {
+        border-top: 1px solid #2b2b3b;
+        margin-top: 20px;
+        padding-top: 15px;
+    }
+
+        .file-list div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #2b2b3b;
+            font-size: 0.95rem;
+        }
+
+            .file-list div:last-child {
+                border-bottom: none;
+            }
+
+        .file-list .file-name {
+            color: #f0f0f0;
+        }
+
+        .file-list .file-size {
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+    /* ============================= */
+    /* 🧠 Buttons Modern             */
+    /* ============================= */
+    .btn-analyze {
+        background: #007bff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: background 0.25s, transform 0.2s;
+        box-shadow: 0 4px 18px #58d0ff44;
+    }
+
+        .btn-analyze:hover {
+            background: #339dff;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 8px 28px #58d0ff66;
+        }
+
+    .btn-upload {
+        background: #ffc700;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: #0d0d0d;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: background 0.25s, transform 0.2s;
+        box-shadow: 0 4px 18px #ffc70055;
+    }
+
+        .btn-upload:hover {
+            background: #ffd633;
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 8px 28px #ffc70077;
+        }
+
+    /* ============================= */
+    /* 📊 Progressbar                */
+    /* ============================= */
+    .modern-progress {
+        height: 8px;
+        background: linear-gradient(90deg, #58d0ff, #44d1ff);
+        border-radius: 10px;
+        margin-top: 1rem;
+        box-shadow: 0 2px 10px #44d1ff55;
+        animation: modernBar 2s linear infinite;
+    }
+
+    @@keyframes modernBar {
+        0%
+
+    {
+        width: 0;
+    }
+
+    50% {
+        width: 80%;
+    }
+
+    100% {
+        width: 100%;
+    }
+
+    }
+
+    /* ============================= */
+    /* 🔽 Select Modern              */
+    /* ============================= */
+    select.form-select {
+        background: #181818;
+        color: #58d0ff;
+        font-weight: 700;
+        border-radius: 0.6em;
+        border: 1.5px solid #334477;
+        padding: 0.6em 1em;
+        min-width: 220px;
+        transition: border 0.3s;
+    }
+
+        select.form-select:focus {
+            border: 2px solid #58d0ff;
+            outline: none;
+        }
+</style>
+
+
+<form method="post" enctype="multipart/form-data" id="uploadForm" class="upload-box">
+    <h5 class="upload-title">
+        <i class="bi bi-cloud-arrow-up"></i> Dateien hochladen
+    </h5>
+
+    <!-- Zone Drop -->
+    <div id="drop-area" class="drop-zone">
+        <i class="bi bi-folder2-open upload-icon"></i>
+        <p class="upload-text">Ziehe Dateien hierher oder <span class="highlight">klicke</span></p>
+        <input asp-for="Dateien" type="file" multiple
+               class="form-control d-none" id="fileElem"
+               accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif" />
+    </div>
+
+    <!-- Liste Fichiers -->
+    <div id="file-list" class="file-list mt-3"></div>
+
+    <!-- Boutons -->
+    <div class="d-flex justify-content-center gap-3 mt-4">
+        <button asp-page-handler="Analyze"
+                id="analyzeBtn"
+                class="btn btn-analyze">
+            🧠 Analysieren
+        </button>
+    </div>
+</form>
+
+
+
+
+<!-- HIER unter dem Formular: -->
+@if (Model.Dokumente?.Any() == true)
+{
+    <div class="mt-5">
+        @foreach (var doc in Model.Dokumente)
+        {
+            <div class="mb-3 p-2 rounded" style="background:#232526;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span>
+                        <i class="bi bi-file-earmark" style="color:#58d0ff;font-size:1.45em;"></i>
+                        <span style="font-family:monospace;color:#fff;font-size:1.08em;">
+                            @doc.FileName
+                            @if (doc.Metadata?.IsGrossDoc ?? false)
+                            {
+                                <span class="badge bg-info ms-2">Große Datei</span>
+                            }
+                        </span>
+                    </span>
+
+                    <span class="badge @(doc.Status == DokumentStatus.Analyzed ? "bg-success" : "bg-warning") text-dark" style="font-size:1em;">
+                        @if (doc.Status == DokumentStatus.Analyzed)
+                        {
+                            <span><i class="bi bi-check-circle-fill" style="color:#198754;"></i> Fertig</span>
+                        }
+                        else
+                        {
+                            <span><i class="bi bi-hourglass-split" style="color:#58d0ff;"></i> Wird analysiert…</span>
+                        }
+                </span>
+            </div>
+
+            <div class="progress mt-2" style="height:7px;">
+                <div class="progress-bar @(doc.Metadata?.IsGrossDoc ?? false ? "bg-primary" : "")"
+                     role="progressbar"
+                     style="width:@(doc.Progress ?? 100)%; background:@((doc.Metadata?.IsGrossDoc ?? false)
+                                                                       ? "linear-gradient(90deg,#007bff,#00c6ff)"
+                                                                       : "linear-gradient(90deg,#ffc700,#44d1ff)");">
+            </div>
+        </div>
+    </div>
+        }
+    </div>
+}
+
+
+
+<!-- Direkt in dein Layout oder View oben einbauen! -->
+<div id="analyzeSpinner" class="analyze-modern p-4 d-none"
+     style="border: 2px solid #44d1ff; border-radius: 1.2rem; background: #222; position:fixed; top:20%; left:0; right:0; margin:auto; max-width:500px; z-index: 10000;">
+    <h5 style="color:#58d0ff;font-weight:900;">Analyse läuft… <i class="bi bi-arrow-repeat spin"></i></h5>
+    <div class="mb-2" style="color:#fff;">
+        <span>Dateien werden analysiert. Bitte warten!</span><br>
+        <span style="color:#ffe066; font-size: 1.07rem;">
+            💡 Tipp: Die Metadaten erscheinen automatisch unten.
+        </span>
+    </div>
+    <div class="progress mt-2" style="height:7px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated"
+             style="width: 70%; background:linear-gradient(90deg,#58d0ff,#44d1ff);"></div>
+    </div>
+</div>
+
+@if (Model.Dokumente?.Any() == true)
+{
+    <div class="table-responsive mt-5">
+        <table class="table align-middle" style="background: #181818; color: #fff; border-radius: 18px; overflow: hidden; margin-bottom: 3rem;">
+            <thead style="background: #101012;">
+                <tr>
+                    <th style="font-weight:900; color:#58d0ff; letter-spacing:0.05em; text-transform:uppercase;">
+                        <i class="bi bi-folder-symlink" style="color:#58d0ff;"></i> Dateiname
+                    </th>
+                    <th style="font-weight:900; color:#44d1ff; letter-spacing:0.04em;">
+                        Status
+                    </th>
+                    <th style="font-weight:900; color:#58d0ff;">
+                        Aktionen
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Dokumente.Count; i++)
+                {
+                    var vm = Model.Dokumente[i];
+                    var isSaved = vm.Status == DokumentStatus.Saved;
+                    var isAnalyzed = vm.Status == DokumentStatus.Analyzed;
+
+                    <tr style="border-bottom: 1px solid #242424;">
+                        <td style="font-family:'Fira Mono', monospace;">
+                            <i class="bi bi-file-earmark-text" style="color:#58d0ff;"></i>
+                            @vm.FileName
+                        </td>
+                        <td>
+                            @{
+                                var statusText = isSaved ? "Gespeichert"
+                                : isAnalyzed ? "Analysiert"
+                                : "Neu";
+                                var statusBg = isSaved ? "linear-gradient(90deg,#18bc9c,#44d1ff)"
+                                : isAnalyzed ? "linear-gradient(90deg,#44d1ff 60%,#18bc9c 100%)"
+                                : "linear-gradient(90deg,#e74c3c,#b31217)";
+                                var statusColor = isSaved ? "#181818" : "#222";
+                            }
+                            <span style="padding: 4px 16px; border-radius: 20px;
+                                                         background: @statusBg;
+                                                         color: @statusColor; font-weight: bold; box-shadow:0 2px 6px #44d1ff33;">
+                                @statusText
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button"
+                                    onclick="toggleMeta(@i)"
+                                    class="btn btn-sm"
+                                    style="background:#181818; color:#58d0ff; border:2px solid #58d0ff; font-weight:700; border-radius:10px;">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+                            @if (isAnalyzed && !(vm.Metadata?.IsGrossDoc ?? false))
+                            {
+                                <form method="post" asp-page-handler="Save" asp-route-index="@i" style="display:inline;">
+                                    <button type="submit"
+                                            class="btn btn-sm"
+                                            style="background: linear-gradient(90deg,#58d0ff 60%,#ffec80 100%);
+                                               color: #181818; font-weight:700; margin-left:0.6em; border-radius:10px; border:none;">
+                                        <i class="bi bi-save-fill"></i>
+                                    </button>
+                                </form>
+                            }
+
+
+                            @if (!isSaved)
+                            {
+                                <form method="post" asp-page-handler="Remove" asp-route-index="@i" style="display:inline;">
+                                    <button type="submit"
+                                            class="btn btn-sm"
+                                            style="background: #232526; color: #ff6565; font-weight:700; margin-left:0.6em; border-radius:10px; border:2px solid #ff6565;">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            }
+                            @if (isSaved)
+                            {
+                                <i class="bi bi-check-circle-fill ms-2" style="color:#18bc9c; font-size:1.45em;" title="Gespeichert"></i>
+                            }
+                        </td>
+                    </tr>
+                    <!-- Inline-Metadaten-Bearbeitung -->
+                    <tr id="collapseMeta_@i" style="display: none; background: #181818;">
+                        <td colspan="3" style="padding:0;">
+                            <form method="post" asp-page-handler="Save" id="form_@i" class="p-4 rounded" style="background: #222; margin:0;">
+                                <input type="hidden" name="index" value="@i" />
+                                <div id="visibleMeta_@i">
+                                    <h5 class="text-info mb-3">📄 Faktura / Metadaten</h5>
+                                    <div class="row mb-3">
+                                        @* ALLE FELDER, falls sie NICHT leer sind *@
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Kategorie))
+                                        {
+                                            <select name="Dokumente[@i].Metadata.Kategorie"
+                                                    class="form-select"
+                                                    style="background: #181818; color: #58d0ff; font-weight:700;">
+
+                                                <!-- 💰 Finanzen -->
+                                                <option value="rechnungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "rechnungen" ? "selected" : null)">Rechnungen</option>
+                                                <option value="gutschriften" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "gutschriften" ? "selected" : null)">Gutschriften</option>
+                                                <option value="gebühren" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "gebühren" ? "selected" : null)">Gebühren</option>
+                                                <option value="steuerunterlagen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "steuerunterlagen" ? "selected" : null)">Steuerunterlagen</option>
+                                                <option value="bankunterlagen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "bankunterlagen" ? "selected" : null)">Bankunterlagen</option>
+                                                <option value="jahresabschlüsse" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "jahresabschlüsse" ? "selected" : null)">Jahresabschlüsse</option>
+                                                <option value="budgets" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "budgets" ? "selected" : null)">Budgets</option>
+                                                <option value="spesenabrechnungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "spesenabrechnungen" ? "selected" : null)">Spesenabrechnungen</option>
+                                                <option value="finanzberichte" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "finanzberichte" ? "selected" : null)">Finanzberichte</option>
+
+                                                <!-- 👨‍💼 HR -->
+                                                <option value="gehaltsabrechnungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "gehaltsabrechnungen" ? "selected" : null)">Gehaltsabrechnungen</option>
+                                                <option value="arbeitsverträge" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "arbeitsverträge" ? "selected" : null)">Arbeitsverträge</option>
+                                                <option value="mitarbeiterakten" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "mitarbeiterakten" ? "selected" : null)">Mitarbeiterakten</option>
+                                                <option value="arbeitszeugnisse" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "arbeitszeugnisse" ? "selected" : null)">Arbeitszeugnisse</option>
+                                                <option value="schulungsunterlagen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "schulungsunterlagen" ? "selected" : null)">Schulungsunterlagen</option>
+                                                <option value="hr-mitteilungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "hr-mitteilungen" ? "selected" : null)">HR-Mitteilungen</option>
+
+                                                <!-- 🎓 Studium -->
+                                                <option value="diplome" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "diplome" ? "selected" : null)">Diplome</option>
+                                                <option value="bachelor" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "bachelor" ? "selected" : null)">Bachelor</option>
+                                                <option value="master" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "master" ? "selected" : null)">Master</option>
+                                                <option value="zertifikate" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "zertifikate" ? "selected" : null)">Zertifikate</option>
+                                                <option value="notenübersicht" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "notenübersicht" ? "selected" : null)">Notenübersicht</option>
+                                                <option value="abschlussarbeiten" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "abschlussarbeiten" ? "selected" : null)">Abschlussarbeiten</option>
+
+                                                <!-- 📑 Recht -->
+                                                <option value="verträge" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "verträge" ? "selected" : null)">Verträge</option>
+                                                <option value="genehmigungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "genehmigungen" ? "selected" : null)">Genehmigungen</option>
+                                                <option value="compliance" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "compliance" ? "selected" : null)">Compliance</option>
+                                                <option value="rechtsstreitigkeiten" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "rechtsstreitigkeiten" ? "selected" : null)">Rechtsstreitigkeiten</option>
+
+                                                <!-- 🛒 Einkauf / Verkauf -->
+                                                <option value="angebote" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "angebote" ? "selected" : null)">Angebote</option>
+                                                <option value="bestellungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "bestellungen" ? "selected" : null)">Bestellungen</option>
+                                                <option value="lieferverträge" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "lieferverträge" ? "selected" : null)">Lieferverträge</option>
+                                                <option value="lieferscheine" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "lieferscheine" ? "selected" : null)">Lieferscheine</option>
+                                                <option value="kundenaufträge" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "kundenaufträge" ? "selected" : null)">Kundenaufträge</option>
+                                                <option value="sales_reports" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "sales_reports" ? "selected" : null)">Sales Reports</option>
+
+                                                <!-- 🚚 Logistik -->
+                                                <option value="frachtbriefe" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "frachtbriefe" ? "selected" : null)">Frachtbriefe</option>
+                                                <option value="zolldokumente" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "zolldokumente" ? "selected" : null)">Zolldokumente</option>
+                                                <option value="inventar" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "inventar" ? "selected" : null)">Inventar</option>
+
+                                                <!-- 🛠️ IT / Support / Qualität -->
+                                                <option value="technische_zeichnungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "technische_zeichnungen" ? "selected" : null)">Technische Zeichnungen</option>
+                                                <option value="handbücher" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "handbücher" ? "selected" : null)">Handbücher</option>
+                                                <option value="support_tickets" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "support_tickets" ? "selected" : null)">Support Tickets</option>
+                                                <option value="softwaredokumentation" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "softwaredokumentation" ? "selected" : null)">Softwaredokumentation</option>
+                                                <option value="software_lizenzen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "software_lizenzen" ? "selected" : null)">Software Lizenzen</option>
+                                                <option value="it_audits" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "it_audits" ? "selected" : null)">IT Audits</option>
+                                                <option value="iso_zertifikate" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "iso_zertifikate" ? "selected" : null)">ISO-Zertifikate</option>
+                                                <option value="qualitätsberichte" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "qualitätsberichte" ? "selected" : null)">Qualitätsberichte</option>
+                                                <option value="auditpläne" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "auditpläne" ? "selected" : null)">Auditpläne</option>
+                                                <option value="qm_dokumente" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "qm_dokumente" ? "selected" : null)">QM-Dokumente</option>
+
+                                                <!-- 📊 Management -->
+                                                <option value="projektunterlagen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "projektunterlagen" ? "selected" : null)">Projektunterlagen</option>
+                                                <option value="projektberichte" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "projektberichte" ? "selected" : null)">Projektberichte</option>
+                                                <option value="kpi_reports" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "kpi_reports" ? "selected" : null)">KPI Reports</option>
+                                                <option value="protokolle" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "protokolle" ? "selected" : null)">Protokolle</option>
+
+                                                <!-- 📣 Marketing -->
+                                                <option value="marketingunterlagen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "marketingunterlagen" ? "selected" : null)">Marketingunterlagen</option>
+                                                <option value="broschüren" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "broschüren" ? "selected" : null)">Broschüren</option>
+                                                <option value="pressemitteilungen" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "pressemitteilungen" ? "selected" : null)">Pressemitteilungen</option>
+
+                                                <!-- 🏢 Verwaltung / Allgemein -->
+                                                <option value="korrespondenz" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "korrespondenz" ? "selected" : null)">Korrespondenz</option>
+                                                <option value="memos" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "memos" ? "selected" : null)">Memos</option>
+                                                <option value="richtlinien" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "richtlinien" ? "selected" : null)">Richtlinien</option>
+                                                <option value="allgemeine_dokumente" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "allgemeine_dokumente" ? "selected" : null)">Allgemeine Dokumente</option>
+
+                                                <!-- ❓ Default -->
+                                                <option value="unbekannt" selected="@(vm.Metadata.Kategorie?.ToLowerInvariant() == "unbekannt" ? "selected" : null)">Unbekannt</option>
+                                            </select>
+                                        }
+
+
+                                        @if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                                        {
+                                            <!-- Admin: choix libre -->
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Abteilung</label>
+                                                <select name="Dokumente[@i].Metadata.AbteilungId" class="form-select">
+                                                    <option value="">-- Abteilung wählen --</option>
+                                                    @foreach (var abt in Model.Abteilungen)
+                                                    {
+                                                        <option value="@abt.Id" selected="@(vm.Metadata.AbteilungId == abt.Id ? "selected" : null)">
+                                                            @abt.Name
+                                                        </option>
+                                                    }
+                                                </select>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <!-- User: Abteilung imposée -->
+                                            <input type="hidden"
+                                                   name="Dokumente[@i].Metadata.AbteilungId"
+                                                   value="@Model.UserAbteilungId" />
+                                            <div class="col-md-4 mb-3">
+                                                <label class="form-label">Abteilung</label><br />
+                                                <span class="badge bg-info">Deine Abteilung: @Model.UserAbteilungName</span>
+                                            </div>
+                                        }
+
+
+
+
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Beschreibung))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Beschreibung</label><input name="Dokumente[@i].Metadata.Beschreibung" value="@vm.Metadata.Beschreibung" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Titel))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Titel</label><input name="Dokumente[@i].Metadata.Titel" value="@vm.Metadata.Titel" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsnummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsnummer</label><input name="Dokumente[@i].Metadata.Rechnungsnummer" value="@vm.Metadata.Rechnungsnummer" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Kundennummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Kundennummer</label><input name="Dokumente[@i].Metadata.Kundennummer" value="@vm.Metadata.Kundennummer" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsbetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsbetrag</label><input name="Dokumente[@i].Metadata.Rechnungsbetrag" value="@vm.Metadata.Rechnungsbetrag" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Nettobetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Nettobetrag</label><input name="Dokumente[@i].Metadata.Nettobetrag" value="@vm.Metadata.Nettobetrag" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Gesamtpreis))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Gesamtpreis</label><input name="Dokumente[@i].Metadata.Gesamtpreis" value="@vm.Metadata.Gesamtpreis" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Steuerbetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Steuerbetrag</label><input name="Dokumente[@i].Metadata.Steuerbetrag" value="@vm.Metadata.Steuerbetrag" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsdatum</label><input name="Dokumente[@i].Metadata.Rechnungsdatum" value="@vm.Metadata.Rechnungsdatum" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Lieferdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Lieferdatum</label><input name="Dokumente[@i].Metadata.Lieferdatum" value="@vm.Metadata.Lieferdatum" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Faelligkeitsdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Fälligkeitsdatum</label><input name="Dokumente[@i].Metadata.Faelligkeitsdatum" value="@vm.Metadata.Faelligkeitsdatum" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Zahlungsbedingungen))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Zahlungsbedingungen</label><input name="Dokumente[@i].Metadata.Zahlungsbedingungen" value="@vm.Metadata.Zahlungsbedingungen" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Lieferart))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Lieferart</label><input name="Dokumente[@i].Metadata.Lieferart" value="@vm.Metadata.Lieferart" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.ArtikelAnzahl))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Artikelanzahl</label><input name="Dokumente[@i].Metadata.ArtikelAnzahl" value="@vm.Metadata.ArtikelAnzahl" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Email))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Email</label><input name="Dokumente[@i].Metadata.Email" value="@vm.Metadata.Email" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Telefon))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Telefon</label><input name="Dokumente[@i].Metadata.Telefon" value="@vm.Metadata.Telefon" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Telefax))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Telefax</label><input name="Dokumente[@i].Metadata.Telefax" value="@vm.Metadata.Telefax" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.IBAN))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">IBAN</label><input name="Dokumente[@i].Metadata.IBAN" value="@vm.Metadata.IBAN" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.BIC))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">BIC</label><input name="Dokumente[@i].Metadata.BIC" value="@vm.Metadata.BIC" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Bankverbindung))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Bankverbindung</label><input name="Dokumente[@i].Metadata.Bankverbindung" value="@vm.Metadata.Bankverbindung" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.SteuerNr))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">SteuerNr</label><input name="Dokumente[@i].Metadata.SteuerNr" value="@vm.Metadata.SteuerNr" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.UIDNummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">UIDNummer</label><input name="Dokumente[@i].Metadata.UIDNummer" value="@vm.Metadata.UIDNummer" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Adresse))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Adresse</label><input name="Dokumente[@i].Metadata.Adresse" value="@vm.Metadata.Adresse" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.AbsenderAdresse))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">AbsenderAdresse</label><input name="Dokumente[@i].Metadata.AbsenderAdresse" value="@vm.Metadata.AbsenderAdresse" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.AnsprechPartner))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">AnsprechPartner</label><input name="Dokumente[@i].Metadata.AnsprechPartner" value="@vm.Metadata.AnsprechPartner" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Zeitraum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Zeitraum</label><input name="Dokumente[@i].Metadata.Zeitraum" value="@vm.Metadata.Zeitraum" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.PdfAutor))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Autor</label><input name="Dokumente[@i].Metadata.PdfAutor" value="@vm.Metadata.PdfAutor" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.PdfBetreff))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Betreff</label><input name="Dokumente[@i].Metadata.PdfBetreff" value="@vm.Metadata.PdfBetreff" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.PdfSchluesselwoerter))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Schlüsselwörter</label><input name="Dokumente[@i].Metadata.PdfSchluesselwoerter" value="@vm.Metadata.PdfSchluesselwoerter" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.Website))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Website</label><input name="Dokumente[@i].Metadata.Website" value="@vm.Metadata.Website" class="form-control" /></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.OCRText))
+                                        {
+                                            <div class="col-md-6">
+                                                <label style="font-weight: bold; color: #22d;">OCRText</label>
+                                                <textarea name="Dokumente[@i].Metadata.OCRText"
+                                              class="form-control"
+                                              style="min-height: 140px; min-width: 380px; font-size: 1.07rem; font-family: 'Fira Mono', 'Consolas', monospace; font-weight: 500; letter-spacing: 0.02em;">@vm.Metadata.OCRText</textarea>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(vm.Metadata.ObjectPath))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">ObjectPath</label><input name="Dokumente[@i].Metadata.ObjectPath" value="@vm.Metadata.ObjectPath" class="form-control" /></div>
+                                        }
+                                    </div>
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-outline-info" onclick="showLeereMeta(@i)">Mehr Metadaten anzeigen</button>
+                                    </div>
+                                </div>
+
+                                <!-- Unsichtbar: nur die LEEREN Felder -->
+                                <div id="leereMeta_@i" style="display:none;">
+                                    <h5 class="text-info mb-3">📄 Faktura (Leere Felder)</h5>
+                                    <div class="row mb-3">
+                                        @* ALLE FELDER, falls sie LEER sind *@
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Kategorie))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Kategorie</label><input name="Dokumente[@i].Metadata.Kategorie" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Beschreibung))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Beschreibung</label><input name="Dokumente[@i].Metadata.Beschreibung" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Titel))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Titel</label><input name="Dokumente[@i].Metadata.Titel" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsnummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsnummer</label><input name="Dokumente[@i].Metadata.Rechnungsnummer" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Kundennummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Kundennummer</label><input name="Dokumente[@i].Metadata.Kundennummer" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsbetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsbetrag</label><input name="Dokumente[@i].Metadata.Rechnungsbetrag" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Nettobetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Nettobetrag</label><input name="Dokumente[@i].Metadata.Nettobetrag" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Gesamtpreis))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Gesamtpreis</label><input name="Dokumente[@i].Metadata.Gesamtpreis" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Steuerbetrag))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Steuerbetrag</label><input name="Dokumente[@i].Metadata.Steuerbetrag" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Rechnungsdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Rechnungsdatum</label><input name="Dokumente[@i].Metadata.Rechnungsdatum" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Lieferdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Lieferdatum</label><input name="Dokumente[@i].Metadata.Lieferdatum" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Faelligkeitsdatum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Fälligkeitsdatum</label><input name="Dokumente[@i].Metadata.Faelligkeitsdatum" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Zahlungsbedingungen))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Zahlungsbedingungen</label><input name="Dokumente[@i].Metadata.Zahlungsbedingungen" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Lieferart))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Lieferart</label><input name="Dokumente[@i].Metadata.Lieferart" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.ArtikelAnzahl))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Artikelanzahl</label><input name="Dokumente[@i].Metadata.ArtikelAnzahl" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Email))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Email</label><input name="Dokumente[@i].Metadata.Email" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Telefon))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Telefon</label><input name="Dokumente[@i].Metadata.Telefon" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Telefax))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Telefax</label><input name="Dokumente[@i].Metadata.Telefax" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.IBAN))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">IBAN</label><input name="Dokumente[@i].Metadata.IBAN" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.BIC))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">BIC</label><input name="Dokumente[@i].Metadata.BIC" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Bankverbindung))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Bankverbindung</label><input name="Dokumente[@i].Metadata.Bankverbindung" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.SteuerNr))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">SteuerNr</label><input name="Dokumente[@i].Metadata.SteuerNr" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.UIDNummer))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">UIDNummer</label><input name="Dokumente[@i].Metadata.UIDNummer" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Adresse))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Adresse</label><input name="Dokumente[@i].Metadata.Adresse" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.AbsenderAdresse))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">AbsenderAdresse</label><input name="Dokumente[@i].Metadata.AbsenderAdresse" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.AnsprechPartner))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">AnsprechPartner</label><input name="Dokumente[@i].Metadata.AnsprechPartner" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Zeitraum))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Zeitraum</label><input name="Dokumente[@i].Metadata.Zeitraum" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.PdfAutor))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Autor</label><input name="Dokumente[@i].Metadata.PdfAutor" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.PdfBetreff))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Betreff</label><input name="Dokumente[@i].Metadata.PdfBetreff" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.PdfSchluesselwoerter))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">PDF-Schlüsselwörter</label><input name="Dokumente[@i].Metadata.PdfSchluesselwoerter" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.Website))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">Website</label><input name="Dokumente[@i].Metadata.Website" value="" class="form-control" /></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.OCRText))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">OCRText</label><textarea name="Dokumente[@i].Metadata.OCRText" class="form-control"></textarea></div>
+                                        }
+                                        @if (string.IsNullOrWhiteSpace(vm.Metadata.ObjectPath))
+                                        {
+                                            <div class="col-md-3"><label class="form-label">ObjectPath</label><input name="Dokumente[@i].Metadata.ObjectPath" value="" class="form-control" /></div>
+                                        }
+                                    </div>
+                                    <div class="mb-3">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="hideLeereMeta(@i)">Weniger Metadaten anzeigen</button>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="button" onclick="toggleMeta(@i)" class="btn btn-secondary me-2">❌ Schließen</button>
+
+
+
+                                    <button type="submit" id="btnSpeichern" class="btn btn-success upload-button">
+                                        💾 Speichern
+                                    </button>
+
+                                </div>
+
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <!-- Form für „Alle speichern“ -->
+    <form method="post" asp-page-handler="SaveAll" id="saveAllForm">
+        @for (int i = 0; i < Model.Dokumente.Count; i++)
+        {
+            var vm = Model.Dokumente[i];
+            if (vm.Status == DokumentStatus.Analyzed)
+            {
+                <!-- Hidden inputs (remplis/surchargés par JS avant submit) -->
+                <input type="hidden" name="Dokumente[@i].Metadata.Kategorie" value="@vm.Metadata.Kategorie" />
+                <input type="hidden" name="Dokumente[@i].Metadata.AbteilungId" value="@vm.Metadata.AbteilungId" />
+
+                <input type="hidden" name="Dokumente[@i].Metadata.Rechnungsnummer" value="@vm.Metadata.Rechnungsnummer" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Kundennummer" value="@vm.Metadata.Kundennummer" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Rechnungsbetrag" value="@vm.Metadata.Rechnungsbetrag" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Nettobetrag" value="@vm.Metadata.Nettobetrag" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Gesamtpreis" value="@vm.Metadata.Gesamtpreis" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Steuerbetrag" value="@vm.Metadata.Steuerbetrag" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Rechnungsdatum" value="@vm.Metadata.Rechnungsdatum" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Lieferdatum" value="@vm.Metadata.Lieferdatum" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Faelligkeitsdatum" value="@vm.Metadata.Faelligkeitsdatum" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Zahlungsbedingungen" value="@vm.Metadata.Zahlungsbedingungen" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Lieferart" value="@vm.Metadata.Lieferart" />
+                <input type="hidden" name="Dokumente[@i].Metadata.ArtikelAnzahl" value="@vm.Metadata.ArtikelAnzahl" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Email" value="@vm.Metadata.Email" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Telefon" value="@vm.Metadata.Telefon" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Telefax" value="@vm.Metadata.Telefax" />
+                <input type="hidden" name="Dokumente[@i].Metadata.IBAN" value="@vm.Metadata.IBAN" />
+                <input type="hidden" name="Dokumente[@i].Metadata.BIC" value="@vm.Metadata.BIC" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Bankverbindung" value="@vm.Metadata.Bankverbindung" />
+                <input type="hidden" name="Dokumente[@i].Metadata.SteuerNr" value="@vm.Metadata.SteuerNr" />
+                <input type="hidden" name="Dokumente[@i].Metadata.UIDNummer" value="@vm.Metadata.UIDNummer" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Adresse" value="@vm.Metadata.Adresse" />
+                <input type="hidden" name="Dokumente[@i].Metadata.AbsenderAdresse" value="@vm.Metadata.AbsenderAdresse" />
+                <input type="hidden" name="Dokumente[@i].Metadata.AnsprechPartner" value="@vm.Metadata.AnsprechPartner" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Zeitraum" value="@vm.Metadata.Zeitraum" />
+                <input type="hidden" name="Dokumente[@i].Metadata.PdfAutor" value="@vm.Metadata.PdfAutor" />
+                <input type="hidden" name="Dokumente[@i].Metadata.PdfBetreff" value="@vm.Metadata.PdfBetreff" />
+                <input type="hidden" name="Dokumente[@i].Metadata.PdfSchluesselwoerter" value="@vm.Metadata.PdfSchluesselwoerter" />
+                <input type="hidden" name="Dokumente[@i].Metadata.Website" value="@vm.Metadata.Website" />
+                <input type="hidden" name="Dokumente[@i].Metadata.OCRText" value="@vm.Metadata.OCRText" />
+            }
+        }
+        <input type="hidden" name="DokumenteJson" value="@Model.DokumenteJson" />
+        <button type="submit" id="btnAlleSpeichern" class="btn upload-button"
+                style="background: linear-gradient(90deg,#58d0ff 60%,#ffec80 100%);
+               color: #181818;
+               font-weight: 700;
+               border-radius: 10px;
+               border: none;
+               box-shadow: 0 2px 8px #ffc70044;">
+            💾 Alle speichern
+        </button>
+
+    </form>
+
+    @if (TempData["Info"] != null)
+    {
+        <div id="uploadInfoMessage" class="alert alert-info alert-dismissible fade show mt-3 shadow" role="alert">
+            <i class="bi bi-info-circle"></i>
+            @Html.Raw(TempData["Info"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mt-3 shadow" role="alert">
+            <i class="bi bi-exclamation-triangle"></i>
+            @Html.Raw(TempData["Error"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+
+
+    @* Rückmeldung nach dem Speichern *@
+    @if (TempData["SavedDocuments"] is string savedJson)
+    {
+        var saved = System.Text.Json.JsonSerializer.Deserialize<List<DmsProjeckt.Data.Dokumente>>(savedJson);
+        if (saved != null && saved.Any())
+        {
+            <div class="alert alert-success mt-3">
+                <h5>✅ Folgende Dokumente gespeichert:</h5>
+                <ul>
+                    @foreach (var doc in saved)
+                    {
+                        <li>
+                            <strong>@doc.Dateiname</strong> –
+                            Betrag: @(doc.MetadatenObjekt?.Rechnungsbetrag?.ToString("N2") ?? "–")
+                        </li>
+
+                    }
+                </ul>
+            </div>
+        }
+    }
+
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("analyzeBtn")?.addEventListener("click", function () {
+                document.getElementById("analyzeSpinner")?.classList.remove("d-none");
+            });
+        });
+        function toggleMeta(idx) {
+            var row = document.getElementById('collapseMeta_' + idx);
+            if (row) {
+                row.style.display = row.style.display === 'none' ? '' : 'none';
+            }
+        }
+              function showLeereMeta(idx) {
+            document.getElementById('visibleMeta_' + idx).style.display = 'none';
+            document.getElementById('leereMeta_' + idx).style.display = '';
+        }
+        function hideLeereMeta(idx) {
+            document.getElementById('visibleMeta_' + idx).style.display = '';
+            document.getElementById('leereMeta_' + idx).style.display = 'none';
+        }
+                document.addEventListener("DOMContentLoaded", function () {
+            const dropArea = document.getElementById('drop-area');
+            const fileElem = document.getElementById('fileElem');
+            const fileList = document.getElementById('file-list');
+
+            function getFileIcon(ext) {
+                switch(ext) {
+                    case "pdf": return '<i class="bi bi-file-earmark-pdf" style="color:#e74c3c;"></i>';
+                    case "png":
+                    case "jpg":
+                    case "jpeg":
+                        return '<i class="bi bi-file-earmark-image" style="color:#44d1ff;"></i>';
+                    case "txt": return '<i class="bi bi-file-earmark-text" style="color:#aaa;"></i>';
+                    case "xls":
+                    case "xlsx":
+                        return '<i class="bi bi-file-earmark-excel" style="color:#27ae60;"></i>';
+                    default: return '<i class="bi bi-file-earmark"></i>';
+                }
+            }
+
+            function formatDate(d) {
+                return d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            }
+
+            function renderFileList(files) {
+                fileList.innerHTML = '';
+                if (!files.length) return;
+                Array.from(files).forEach(file => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const icon = getFileIcon(ext);
+                    const time = formatDate(new Date());
+                    fileList.innerHTML += `
+                        <div class="d-flex align-items-center mb-2 bg-secondary rounded p-2">
+                            <span class="me-2" style="font-size:1.4rem;">${icon}</span>
+                            <div class="flex-fill">
+                                <div><b>${file.name}</b></div>
+                                <div style="font-size:.9rem;color:#ffe066;">${time}</div>
+                            </div>
+                            <span class="badge bg-warning text-dark ms-2">Bereit</span>
+                        </div>
+                    `;
+                });
+            }
+
+            dropArea.addEventListener('click', () => fileElem.click());
+            dropArea.addEventListener('dragover', e => {
+                e.preventDefault();
+                dropArea.style.background = '#232526';
+            });
+            dropArea.addEventListener('dragleave', e => {
+                dropArea.style.background = '#222';
+            });
+            dropArea.addEventListener('drop', e => {
+                e.preventDefault();
+                fileElem.files = e.dataTransfer.files;
+                renderFileList(fileElem.files);
+                dropArea.style.background = '#222';
+            });
+            fileElem.addEventListener('change', e => renderFileList(fileElem.files));
+        });
+
+                document.getElementById("fileElem").addEventListener("change", function () {
+            const fileList = document.getElementById("file-list");
+            fileList.innerHTML = "";
+            Array.from(this.files).forEach(file => {
+                const size = (file.size / 1024).toFixed(1) + " KB";
+                fileList.innerHTML += `
+                    <div>
+                        <span class="file-name">📄 ${file.name}</span>
+                        <span class="file-size">${size}</span>
+                    </div>`;
+            });
+        });
+                   document.addEventListener("DOMContentLoaded", function () {
+            let form = document.getElementById("saveAllForm");
+            if (!form) return; // 🚀 évite l’erreur si le form n’existe pas
+
+            form.addEventListener("submit", function () {
+                // synchronise Kategorie
+                document.querySelectorAll("select[name$='.Metadata.Kategorie']").forEach((sel, idx) => {
+                    let hidden = this.querySelector(`input[name='Dokumente[${idx}].Metadata.Kategorie']`);
+                    if (hidden) hidden.value = sel.value;
+                });
+
+                // synchronise Abteilung
+                document.querySelectorAll("select[name$='.Metadata.AbteilungId']").forEach((sel, idx) => {
+                    let hidden = this.querySelector(`input[name='Dokumente[${idx}].Metadata.AbteilungId']`);
+                    if (hidden) hidden.value = sel.value;
+                });
+            });
+        });
+
+                 document.addEventListener("DOMContentLoaded", function () {
+            const infoDiv = document.getElementById("uploadInfoMessage");
+            if (!infoDiv) return;
+
+            const messageText = infoDiv.innerText || "";
+
+            // 🔍 Détecte le message spécifique de doublon
+            if (messageText.includes("Dein Upload wurde automatisch erkannt")) {
+                console.log("⚠️ Duplicate detected – disabling upload buttons.");
+
+                // 🔒 Désactive tous les boutons de sauvegarde
+                document.querySelectorAll(".upload-button").forEach(btn => {
+                    btn.disabled = true;
+                    btn.title = "Diese Datei wurde bereits hochgeladen";
+                    btn.style.opacity = "0.5";
+                    btn.style.cursor = "not-allowed";
+                    btn.innerHTML = "🚫 Bereits hochgeladen";
+                });
+
+                // 💬 Notification visuelle (Bootstrap-style)
+                const alertBox = document.createElement("div");
+                alertBox.className = "alert alert-warning alert-dismissible fade show mt-3 shadow";
+                alertBox.innerHTML = `
+                    <i class="bi bi-exclamation-triangle"></i>
+                    ⚠️ Upload existiert bereits – kein erneutes Hochladen möglich!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.body.appendChild(alertBox);
+
+                // 🪄 Scroll vers le haut du message
+                infoDiv.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        });
+             
+    </script>
+}
